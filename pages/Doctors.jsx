@@ -1,5 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import DoctorCard from "../components/DoctorCard";
+import LoginCard from "../components/auth/LoginCard";
+import OtpCard from "../components/auth/OtpCard";
+import ResetPasswordCard from "../components/auth/ResetPasswordCard";
 
 const doctorData = [
   {
@@ -57,19 +60,59 @@ const pageContent = {
   },
   login: {
     eyebrow: "Secure Access",
-    title: "Patient and staff login entry point.",
+    title: "Login",
     description:
-      "For now this is a placeholder view so the navigation remains fully interactive while you focus on UI development."
+      "Use the screens below for login, password reset, and OTP verification."
   }
 };
 
 const Doctors = ({ activePage }) => {
+  const [loginView, setLoginView] = useState("login");
+  const [authMessage, setAuthMessage] = useState("");
   const currentPage = pageContent[activePage] || pageContent.doctors;
   const showDoctors = activePage === "doctors";
+  const showLogin = activePage === "login";
+
+  const loginCardBody = {
+    login: (
+      <LoginCard
+        onForgotPassword={() => {
+          setAuthMessage("");
+          setLoginView("reset");
+        }}
+        onRegister={() => {
+          setAuthMessage("Register screen is not added yet. Use reset for now.");
+          setLoginView("reset");
+        }}
+        onLogin={() => setAuthMessage("Login button clicked. Connect this to your backend when ready.")}
+      />
+    ),
+    reset: (
+      <ResetPasswordCard
+        onBackToLogin={() => {
+          setAuthMessage("");
+          setLoginView("login");
+        }}
+        onReset={() => {
+          setAuthMessage("Reset submitted. Please enter the OTP code.");
+          setLoginView("otp");
+        }}
+      />
+    ),
+    otp: (
+      <OtpCard
+        onResendCode={() => setAuthMessage("A new OTP code has been sent.")}
+        onSubmitOtp={() => setAuthMessage("OTP submitted successfully.")}
+      />
+    )
+  };
 
   return (
     <section className="page-section">
-      <div className="page-copy">
+      <div
+        className="page-copy"
+        style={showLogin ? { paddingBottom: 0, maxWidth: "480px", margin: "0 auto", width: "100%", textAlign: "center" } : undefined}
+      >
         <p className="page-copy__eyebrow">{currentPage.eyebrow}</p>
         <h1>{currentPage.title}</h1>
         <p className="page-copy__description">{currentPage.description}</p>
@@ -80,6 +123,25 @@ const Doctors = ({ activePage }) => {
           {doctorData.map((doc) => (
             <DoctorCard key={doc.name} doctor={doc} />
           ))}
+        </div>
+      ) : showLogin ? (
+        <div
+          className="placeholder-panel auth-panel"
+          style={{
+            maxWidth: "480px",
+            width: "100%",
+            margin: "0 auto",
+            background: "#dcdcdc",
+            padding: "36px 30px",
+            minHeight: loginView === "otp" ? "430px" : "560px"
+          }}
+        >
+          {loginCardBody[loginView]}
+          {authMessage ? (
+            <p className="auth-card__message" style={{ margin: "16px 0 0", textAlign: "center", fontSize: "12px", color: "#1d4ed8" }}>
+              {authMessage}
+            </p>
+          ) : null}
         </div>
       ) : (
         <div className="placeholder-panel">
