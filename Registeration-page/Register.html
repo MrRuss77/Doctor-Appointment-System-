@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Register</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f2f2f2;
+      text-align: center;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #fff;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .navbar a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #333;
+    }
+
+    .login-btn {
+      padding: 8px 15px;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+    }
+
+    /* Form */
+    .container {
+      padding: 50px;
+    }
+
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    input {
+      margin: 5px;
+      padding: 10px;
+      width: 200px;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 50px;
+      padding: 15px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .login-link {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .login-link a {
+      text-decoration: none;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+  <div><b>🩺 Doctris</b></div>
+  <div>
+    <a href="#">Home</a>
+    <a href="#">Doctors</a>
+    <a href="#">Departments</a>
+    <a href="login.html" class="login-btn">Login</a>
+  </div>
+</div>
+
+<!-- Form Section -->
+<div class="container">
+  <h2>Register</h2>
+
+  <form id="registerForm">
+    <input type="text" id="name" placeholder="Name" required><br>
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="text" id="phone" placeholder="Phone Number" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" required><br>
+
+    <button type="submit">Register</button>
+
+    <!-- Already have account -->
+    <div class="login-link">
+      Already have an account? <a href="login.html">Login</a>
+    </div>
+  </form>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  © 2026 Doctris. All Rights Reserved.
+</div>
+
+<script>
+document.getElementById("registerForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const phone = document.getElementById("phone").value;
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  if(password !== confirmPassword){
+    alert("Passwords do not match!");
+    return;
+  }
+
+  const response = await fetch("http://localhost:5000/register", {
+    method:"POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, phone, password })
+  });
+
+  const data = await response.text();
+  alert(data);
+
+  if(data === "User Registered Successfully"){
+    window.location.href = "login.html";
+  }
+});
+</script>
+
+</body>
+</html>
