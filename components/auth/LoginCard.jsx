@@ -57,7 +57,7 @@ const linkButtonStyle = {
   fontSize: "11px"
 };
 
-const LoginCard = ({ onForgotPassword, onRegister, onLogin }) => {
+const LoginCard = ({ onForgotPassword, onRegister, onLogin, onBack }) => {
   return (
     <div className="auth-card__content">
       <div className="auth-card__header" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
@@ -95,6 +95,11 @@ const LoginCard = ({ onForgotPassword, onRegister, onLogin }) => {
         <button className="auth-card__link" type="button" style={{ ...linkButtonStyle, marginTop: "4px" }} onClick={onRegister}>
           Register
         </button>
+        <div style={{ marginTop: "12px" }}>
+          <button className="auth-card__link" type="button" style={linkButtonStyle} onClick={onBack}>
+            Back
+          </button>
+        </div>
       </div>
     </div>
   );

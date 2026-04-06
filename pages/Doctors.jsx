@@ -73,29 +73,42 @@ const Doctors = ({ activePage }) => {
   const showDoctors = activePage === "doctors";
   const showLogin = activePage === "login";
 
+  const clearStatus = () => {
+    setAuthMessage("");
+  };
+
   const loginCardBody = {
     login: (
       <LoginCard
         onForgotPassword={() => {
-          setAuthMessage("");
+          clearStatus();
           setLoginView("reset");
         }}
         onRegister={() => {
+          clearStatus();
           setAuthMessage("Register screen is not added yet. Use reset for now.");
           setLoginView("reset");
         }}
         onLogin={() => setAuthMessage("Login button clicked. Connect this to your backend when ready.")}
+        onBack={() => {
+          clearStatus();
+          setLoginView("login");
+        }}
       />
     ),
     reset: (
       <ResetPasswordCard
         onBackToLogin={() => {
-          setAuthMessage("");
+          clearStatus();
           setLoginView("login");
         }}
         onReset={() => {
           setAuthMessage("Reset submitted. Please enter the OTP code.");
           setLoginView("otp");
+        }}
+        onBack={() => {
+          clearStatus();
+          setLoginView("login");
         }}
       />
     ),
@@ -103,6 +116,10 @@ const Doctors = ({ activePage }) => {
       <OtpCard
         onResendCode={() => setAuthMessage("A new OTP code has been sent.")}
         onSubmitOtp={() => setAuthMessage("OTP submitted successfully.")}
+        onBack={() => {
+          clearStatus();
+          setLoginView("reset");
+        }}
       />
     )
   };

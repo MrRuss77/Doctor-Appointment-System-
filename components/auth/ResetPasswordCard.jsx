@@ -57,7 +57,7 @@ const linkButtonStyle = {
   fontSize: "11px"
 };
 
-const ResetPasswordCard = ({ onBackToLogin, onReset }) => {
+const ResetPasswordCard = ({ onBackToLogin, onReset, onBack }) => {
   return (
     <div className="auth-card__content">
       <div className="auth-card__header" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
@@ -99,6 +99,11 @@ const ResetPasswordCard = ({ onBackToLogin, onReset }) => {
         <button className="auth-card__link" type="button" style={{ ...linkButtonStyle, marginTop: "4px" }} onClick={onBackToLogin}>
           Login
         </button>
+        <div style={{ marginTop: "12px" }}>
+          <button className="auth-card__link" type="button" style={linkButtonStyle} onClick={onBack}>
+            Back
+          </button>
+        </div>
       </div>
     </div>
   );
