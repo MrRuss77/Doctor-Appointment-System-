@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 
 const BrandMark = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true" style={{ width: "22px", height: "22px", color: "#111827" }}>
@@ -49,6 +49,40 @@ const linkButtonStyle = {
 };
 
 const OtpCard = ({ onResendCode, onSubmitOtp, onBack }) => {
+  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
+  const [message, setMessage] = useState("");
+  const inputRefs = useRef([]);
+
+  const handleOtpChange = (index, value) => {
+    const cleanValue = value.replace(/\D/g, "").slice(-1);
+    const nextDigits = [...otpDigits];
+    nextDigits[index] = cleanValue;
+    setOtpDigits(nextDigits);
+    setMessage("");
+
+    if (cleanValue && index < inputRefs.current.length - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !otpDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleSubmit = () => {
+    const otpCode = otpDigits.join("");
+
+    if (otpCode.length !== 6) {
+      setMessage("Please enter the full 6-digit OTP.");
+      return;
+    }
+
+    setMessage("OTP entered successfully.");
+    onSubmitOtp?.(otpCode);
+  };
+
   return (
     <div className="auth-card__content">
       <div className="auth-card__header" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
@@ -63,15 +97,33 @@ const OtpCard = ({ onResendCode, onSubmitOtp, onBack }) => {
 
       <div className="auth-card__otp-row" style={{ display: "flex", justifyContent: "space-between", gap: "6px", marginTop: "10px" }}>
         {Array.from({ length: 6 }).map((_, index) => (
-          <input className="auth-card__otp-input" key={index} type="text" maxLength={1} style={otpInputStyle} />
+          <input
+            className="auth-card__otp-input"
+            key={index}
+            type="text"
+            maxLength={1}
+            style={otpInputStyle}
+            value={otpDigits[index]}
+            ref={(element) => {
+              inputRefs.current[index] = element;
+            }}
+            onChange={(event) => handleOtpChange(index, event.target.value)}
+            onKeyDown={(event) => handleKeyDown(index, event)}
+          />
         ))}
       </div>
 
       <div className="auth-card__actions" style={{ textAlign: "center", marginTop: "20px" }}>
-        <button className="auth-card__button" type="button" style={primaryButtonStyle} onClick={onSubmitOtp}>
+        <button className="auth-card__button" type="button" style={primaryButtonStyle} onClick={handleSubmit}>
           Enter
         </button>
       </div>
+
+      {message ? (
+        <div style={{ marginTop: "10px", textAlign: "center", fontSize: "11px", color: "#1d4ed8" }}>
+          {message}
+        </div>
+      ) : null}
 
       <div className="auth-card__footer" style={{ textAlign: "center", marginTop: "12px", fontSize: "10px", color: "#4b5563" }}>
         <div>Didn't receive a code ?</div>

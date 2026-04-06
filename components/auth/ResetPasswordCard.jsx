@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 const BrandMark = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true" style={{ width: "22px", height: "22px", color: "#111827" }}>
@@ -58,6 +58,32 @@ const linkButtonStyle = {
 };
 
 const ResetPasswordCard = ({ onBackToLogin, onReset, onBack }) => {
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [verifyPassword, setVerifyPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleReset = () => {
+    if (!email.trim() || !phone.trim() || !password.trim() || !verifyPassword.trim()) {
+      setMessage("Please fill all fields.");
+      return;
+    }
+
+    if (password !== verifyPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+
+    setMessage("Reset form is ready.");
+    onReset?.({
+      email: email.trim(),
+      phone: phone.trim(),
+      password,
+      verifyPassword
+    });
+  };
+
   return (
     <div className="auth-card__content">
       <div className="auth-card__header" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
@@ -70,29 +96,71 @@ const ResetPasswordCard = ({ onBackToLogin, onReset, onBack }) => {
 
       <label className="auth-card__label" style={labelStyle}>
         Email:
-        <input className="auth-card__input" type="email" style={inputStyle} />
+        <input
+          className="auth-card__input"
+          type="email"
+          style={inputStyle}
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setMessage("");
+          }}
+        />
       </label>
 
       <label className="auth-card__label" style={labelStyle}>
         Phone Number:
-        <input className="auth-card__input" type="text" style={inputStyle} />
+        <input
+          className="auth-card__input"
+          type="text"
+          style={inputStyle}
+          value={phone}
+          onChange={(event) => {
+            setPhone(event.target.value);
+            setMessage("");
+          }}
+        />
       </label>
 
       <label className="auth-card__label" style={labelStyle}>
         Password:
-        <input className="auth-card__input" type="password" style={inputStyle} />
+        <input
+          className="auth-card__input"
+          type="password"
+          style={inputStyle}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setMessage("");
+          }}
+        />
       </label>
 
       <label className="auth-card__label" style={labelStyle}>
         Verify Password:
-        <input className="auth-card__input" type="password" style={inputStyle} />
+        <input
+          className="auth-card__input"
+          type="password"
+          style={inputStyle}
+          value={verifyPassword}
+          onChange={(event) => {
+            setVerifyPassword(event.target.value);
+            setMessage("");
+          }}
+        />
       </label>
 
       <div className="auth-card__actions" style={{ textAlign: "center", marginTop: "18px" }}>
-        <button className="auth-card__button" type="button" style={primaryButtonStyle} onClick={onReset}>
+        <button className="auth-card__button" type="button" style={primaryButtonStyle} onClick={handleReset}>
           Reset
         </button>
       </div>
+
+      {message ? (
+        <div style={{ marginTop: "10px", textAlign: "center", fontSize: "11px", color: "#1d4ed8" }}>
+          {message}
+        </div>
+      ) : null}
 
       <div className="auth-card__footer" style={{ textAlign: "center", marginTop: "14px", fontSize: "11px", color: "#374151" }}>
         <div>Already have an account ?</div>

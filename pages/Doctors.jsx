@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import DoctorCard from "../components/DoctorCard";
+import Departments from "./Departments";
 import LoginCard from "../components/auth/LoginCard";
 import OtpCard from "../components/auth/OtpCard";
 import ResetPasswordCard from "../components/auth/ResetPasswordCard";
@@ -53,10 +54,9 @@ const pageContent = {
       "Browse a clean, responsive doctor directory with clickable tabs and room to expand into booking or profile details."
   },
   departments: {
-    eyebrow: "Clinical Departments",
-    title: "Organize services by department.",
-    description:
-      "This state can later hold department cards, filters, and service summaries without changing the core layout."
+    eyebrow: "",
+    title: "",
+    description: ""
   },
   login: {
     eyebrow: "Secure Access",
@@ -72,6 +72,7 @@ const Doctors = ({ activePage }) => {
   const currentPage = pageContent[activePage] || pageContent.doctors;
   const showDoctors = activePage === "doctors";
   const showLogin = activePage === "login";
+  const showDepartments = activePage === "departments";
 
   const clearStatus = () => {
     setAuthMessage("");
@@ -125,10 +126,16 @@ const Doctors = ({ activePage }) => {
   };
 
   return (
-    <section className="page-section">
+    <section className={`page-section ${showDepartments ? "departments-page" : ""}`}>
       <div
         className="page-copy"
-        style={showLogin ? { paddingBottom: 0, maxWidth: "480px", margin: "0 auto", width: "100%", textAlign: "center" } : undefined}
+        style={
+          showLogin
+            ? { paddingBottom: 0, maxWidth: "480px", margin: "0 auto", width: "100%", textAlign: "center" }
+            : showDepartments
+              ? { display: "none" }
+              : undefined
+        }
       >
         <p className="page-copy__eyebrow">{currentPage.eyebrow}</p>
         <h1>{currentPage.title}</h1>
@@ -160,6 +167,8 @@ const Doctors = ({ activePage }) => {
             </p>
           ) : null}
         </div>
+      ) : showDepartments ? (
+        <Departments />
       ) : (
         <div className="placeholder-panel">
           <h2>{currentPage.eyebrow}</h2>

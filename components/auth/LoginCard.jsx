@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 const BrandMark = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true" style={{ width: "22px", height: "22px", color: "#111827" }}>
@@ -58,6 +58,20 @@ const linkButtonStyle = {
 };
 
 const LoginCard = ({ onForgotPassword, onRegister, onLogin, onBack }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleLogin = () => {
+    if (!email.trim() || !password.trim()) {
+      setMessage("Please enter email and password.");
+      return;
+    }
+
+    setMessage("Login form is ready.");
+    onLogin?.({ email: email.trim(), password });
+  };
+
   return (
     <div className="auth-card__content">
       <div className="auth-card__header" style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
@@ -70,19 +84,43 @@ const LoginCard = ({ onForgotPassword, onRegister, onLogin, onBack }) => {
 
       <label className="auth-card__label" style={labelStyle}>
         Email:
-        <input className="auth-card__input" type="email" style={inputStyle} />
+        <input
+          className="auth-card__input"
+          type="email"
+          style={inputStyle}
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setMessage("");
+          }}
+        />
       </label>
 
       <label className="auth-card__label" style={labelStyle}>
         Password:
-        <input className="auth-card__input" type="password" style={inputStyle} />
+        <input
+          className="auth-card__input"
+          type="password"
+          style={inputStyle}
+          value={password}
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setMessage("");
+          }}
+        />
       </label>
 
       <div className="auth-card__actions" style={{ textAlign: "center", marginTop: "18px" }}>
-        <button className="auth-card__button" type="button" style={primaryButtonStyle} onClick={onLogin}>
+        <button className="auth-card__button" type="button" style={primaryButtonStyle} onClick={handleLogin}>
           Login
         </button>
       </div>
+
+      {message ? (
+        <div style={{ marginTop: "10px", textAlign: "center", fontSize: "11px", color: "#1d4ed8" }}>
+          {message}
+        </div>
+      ) : null}
 
       <div className="auth-card__links" style={{ textAlign: "center", marginTop: "8px" }}>
         <button className="auth-card__link" type="button" style={linkButtonStyle} onClick={onForgotPassword}>
