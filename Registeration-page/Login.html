@@ -2,13 +2,7 @@
 <html>
 <head>
   <title>Login</title>
-  <style>
-    body { font-family: Arial; background: #f2f2f2; text-align:center; padding:50px; }
-    form { background: #fff; padding: 20px; border-radius: 10px; display:inline-block; }
-    input { margin: 5px; padding: 10px; width: 200px; }
-    button { padding: 10px 20px; margin-top:10px; background:#4CAF50; color:white; border:none; border-radius:5px; cursor:pointer; }
-    button:hover { background:#45a049; }
-  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -17,7 +11,10 @@
 <form id="loginForm">
   <input type="text" id="userid" placeholder="Email or Phone" required><br>
   <input type="password" id="password" placeholder="Password" required><br>
-  <label><input type="checkbox" id="remember"> Remember me</label><br>
+  <div class="remember-row">
+    <input type="checkbox" id="remember">
+    <label for="remember">Remember me</label>
+  </div>
   <button type="submit">Login</button><br>
   <a href="#" id="forgot">Forgot Password?</a>
 </form>

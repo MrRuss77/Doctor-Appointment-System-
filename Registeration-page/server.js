@@ -8,6 +8,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(__dirname));
 
 // MongoDB Connection
 mongoose.connect("mongodb://127.0.0.1:27017/doctorApp")
@@ -27,7 +28,6 @@ const User = mongoose.model("User", UserSchema);
 
 // Temporary code storage
 let codes = {};
-
 
 // ===================== REGISTER =====================
 app.post("/register", async (req, res) => {
@@ -49,7 +49,6 @@ app.post("/register", async (req, res) => {
     return res.status(500).send("Server error");
   }
 });
-
 
 // ===================== LOGIN =====================
 app.post("/login", async (req, res) => {
@@ -85,7 +84,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
 // ===================== FORGOT PASSWORD =====================
 app.post("/forgot", async (req, res) => {
   try {
@@ -102,14 +100,12 @@ app.post("/forgot", async (req, res) => {
     const code = Math.floor(100000 + Math.random() * 900000);
     codes[userid] = code;
 
-    // In real app, send via email/SMS
     return res.status(200).send(`Your ${method} code is: ${code}`);
 
   } catch (error) {
     return res.status(500).send("Server error");
   }
 });
-
 
 // ===================== RESET PASSWORD =====================
 app.post("/reset", async (req, res) => {
@@ -136,7 +132,6 @@ app.post("/reset", async (req, res) => {
     return res.status(500).send("Server error");
   }
 });
-
 
 // ===================== SERVER =====================
 app.listen(5000, () => {
