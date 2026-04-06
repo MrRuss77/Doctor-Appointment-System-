@@ -33,8 +33,8 @@ const Navbar = ({ activePage, onNavigate }) => {
       <button
         type="button"
         className="brand"
-        onClick={() => handleNavigate("doctors")}
-        aria-label="Go to doctors page"
+        onClick={() => handleNavigate("home")}
+        aria-label="Go to home page"
       >
         <AmbulanceIcon />
         <span>Doctris</span>
