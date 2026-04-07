@@ -4,6 +4,7 @@ const navItems = [
   { id: "home", label: "Home" },
   { id: "doctors", label: "Doctors" },
   { id: "departments", label: "Departments" },
+  { id: "admin", label: "Admin" },
   { id: "login", label: "Login" }
 ];
 

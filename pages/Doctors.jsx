@@ -4,6 +4,7 @@ import Departments from "./Departments";
 import LoginCard from "../components/auth/LoginCard";
 import OtpCard from "../components/auth/OtpCard";
 import ResetPasswordCard from "../components/auth/ResetPasswordCard";
+import AdminPanel from "../components/admin/AdminPanel";
 
 const doctorData = [
   {
@@ -58,6 +59,11 @@ const pageContent = {
     title: "",
     description: ""
   },
+  admin: {
+    eyebrow: "",
+    title: "",
+    description: ""
+  },
   login: {
     eyebrow: "Secure Access",
     title: "Login",
@@ -73,6 +79,7 @@ const Doctors = ({ activePage }) => {
   const showDoctors = activePage === "doctors";
   const showLogin = activePage === "login";
   const showDepartments = activePage === "departments";
+  const showAdmin = activePage === "admin";
 
   const clearStatus = () => {
     setAuthMessage("");
@@ -132,7 +139,7 @@ const Doctors = ({ activePage }) => {
         style={
           showLogin
             ? { paddingBottom: 0, maxWidth: "480px", margin: "0 auto", width: "100%", textAlign: "center" }
-            : showDepartments
+            : showDepartments || showAdmin
               ? { display: "none" }
               : undefined
         }
@@ -169,6 +176,8 @@ const Doctors = ({ activePage }) => {
         </div>
       ) : showDepartments ? (
         <Departments />
+      ) : showAdmin ? (
+        <AdminPanel />
       ) : (
         <div className="placeholder-panel">
           <h2>{currentPage.eyebrow}</h2>
