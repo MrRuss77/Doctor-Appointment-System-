@@ -85,26 +85,9 @@ button:hover {
   font-size: 14px;
 }
 
-.login-link a,
-.forgot-link {
+.login-link a {
   text-decoration: none;
   color: #007bff;
-}
-
-.remember-row {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  margin-bottom: 6px;
-  width: 100%;
-  font-size: 14px;
-}
-
-.remember-row input[type="checkbox"] {
-  width: auto;
-  margin: 0;
 }
 
 /* Footer */

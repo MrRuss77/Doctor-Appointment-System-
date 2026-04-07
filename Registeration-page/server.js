@@ -20,14 +20,10 @@ const UserSchema = new mongoose.Schema({
   name: String,
   email: String,
   phone: String,
-  password: String,
-  attempts: { type: Number, default: 0 }
+  password: String
 });
 
 const User = mongoose.model("User", UserSchema);
-
-// Temporary code storage
-let codes = {};
 
 // ===================== REGISTER =====================
 app.post("/register", async (req, res) => {
@@ -44,89 +40,6 @@ app.post("/register", async (req, res) => {
     await user.save();
 
     return res.status(200).send("User Registered Successfully");
-
-  } catch (error) {
-    return res.status(500).send("Server error");
-  }
-});
-
-// ===================== LOGIN =====================
-app.post("/login", async (req, res) => {
-  try {
-    const { userid, password } = req.body;
-
-    const user = await User.findOne({
-      $or: [{ email: userid }, { phone: userid }]
-    });
-
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-
-    if (user.attempts >= 5) {
-      return res.status(403).send("Maximum login attempts exceeded. Use forgot password.");
-    }
-
-    if (user.password !== password) {
-      user.attempts += 1;
-      await user.save();
-
-      return res.status(401).send(`Incorrect password! Attempts left: ${5 - user.attempts}`);
-    }
-
-    user.attempts = 0;
-    await user.save();
-
-    return res.status(200).send("Login successful!");
-
-  } catch (error) {
-    return res.status(500).send("Server error");
-  }
-});
-
-// ===================== FORGOT PASSWORD =====================
-app.post("/forgot", async (req, res) => {
-  try {
-    const { userid, method } = req.body;
-
-    const user = await User.findOne({
-      $or: [{ email: userid }, { phone: userid }]
-    });
-
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-
-    const code = Math.floor(100000 + Math.random() * 900000);
-    codes[userid] = code;
-
-    return res.status(200).send(`Your ${method} code is: ${code}`);
-
-  } catch (error) {
-    return res.status(500).send("Server error");
-  }
-});
-
-// ===================== RESET PASSWORD =====================
-app.post("/reset", async (req, res) => {
-  try {
-    const { userid, code, newPassword } = req.body;
-
-    if (codes[userid] != code) {
-      return res.status(400).send("Invalid code");
-    }
-
-    const user = await User.findOne({
-      $or: [{ email: userid }, { phone: userid }]
-    });
-
-    user.password = newPassword;
-    user.attempts = 0;
-
-    await user.save();
-    delete codes[userid];
-
-    return res.status(200).send("Password reset successful!");
 
   } catch (error) {
     return res.status(500).send("Server error");
