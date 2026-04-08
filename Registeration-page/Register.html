@@ -51,7 +51,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
 
   const name = document.getElementById("name").value;
   const email = document.getElementById("email").value;
-  const phone = document.getElementById("phone").value;
+  const phone = "+977 " + document.getElementById("phone").value;   
   const password = document.getElementById("password").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
 
@@ -72,6 +72,19 @@ document.getElementById("registerForm").addEventListener("submit", async functio
   if(data === "User Registered Successfully"){
     window.location.href = "login.html";
   }
+});
+document.getElementById("phone").addEventListener("input", function(e) {
+  let value = e.target.value.replace(/\D/g, ""); // keep only digits
+
+  if (value.length > 10) {
+    value = value.slice(0, 10);
+  }
+
+  if (value.length > 3) {
+    value = value.slice(0, 3) + "-" + value.slice(3);
+  }
+
+  e.target.value = value;
 });
 </script>
 

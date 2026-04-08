@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
@@ -36,8 +37,17 @@ app.post("/register", async (req, res) => {
       return res.status(400).send("User with this email or phone already exists");
     }
 
-    const user = new User({ name, email, phone, password });
-    await user.save();
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const user = new User({ 
+      name, 
+      email, 
+      phone, 
+      password: hashedPassword 
+    });
+
+      await user.save();
 
     return res.status(200).send("User Registered Successfully");
 
