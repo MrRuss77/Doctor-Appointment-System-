@@ -1,0 +1,27 @@
+{
+  "name": "doctris-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server/src/index.js",
+    "dev:server": "nodemon server/src/index.js",
+    "seed": "node server/src/seed.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "mongoose": "^8.19.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.4.1",
+    "nodemon": "^3.1.10",
+    "vite": "^5.4.19"
+  }
+}
