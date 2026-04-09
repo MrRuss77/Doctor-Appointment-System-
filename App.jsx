@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "./components/Navbar";
 import Doctors from "./pages/Doctors";
+import Register from "./pages/Register";
 import "./App.css";
 
 function App() {
@@ -10,7 +11,8 @@ function App() {
     <div className="app-shell">
       <Navbar activePage={activePage} onNavigate={setActivePage} />
       <main className="app-main">
-        <Doctors activePage={activePage} />
+        {activePage === "doctors" && <Doctors activePage={activePage} />}
+        {activePage === "register" && <Register />} 
       </main>
     </div>
   );

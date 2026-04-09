@@ -5,7 +5,8 @@ const navItems = [
   { id: "doctors", label: "Doctors" },
   { id: "departments", label: "Departments" },
   { id: "admin", label: "Admin" },
-  { id: "login", label: "Login" }
+  { id: "register", label: "Register" },
+  { id: "login", label: "Login" }  
 ];
 
 const AmbulanceIcon = () => (
