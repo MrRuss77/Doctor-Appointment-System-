@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./Register.css";
 
-const Register = () => {
+const Register = ({ onBackToLogin }) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,9 +55,6 @@ const Register = () => {
         data = await response.text();
       }
 
-      console.log("Status:", response.status);
-      console.log("Response:", data);
-
       if (response.ok) {
         alert("Registered successfully");
         setFirstName("");
@@ -75,7 +72,6 @@ const Register = () => {
         alert(`Error ${response.status}: ${message}`);
       }
     } catch (error) {
-      console.error("Fetch error:", error);
       alert(`Something went wrong: ${error.message}`);
     }
   };
@@ -83,9 +79,15 @@ const Register = () => {
   return (
     <>
       <div className="container">
-        <h2>Register</h2>
-
         <form onSubmit={handleSubmit}>
+
+          {/* Header inside box */}
+          <div className="form-header">
+            <span className="logo">🚑</span>
+            <div className="divider"></div>
+            <h2>Register</h2>
+          </div>
+
           <input
             type="text"
             placeholder="First Name"
@@ -93,7 +95,6 @@ const Register = () => {
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
           />
-          <br />
 
           <input
             type="text"
@@ -102,7 +103,6 @@ const Register = () => {
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
-          <br />
 
           <input
             type="email"
@@ -111,7 +111,6 @@ const Register = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <br />
 
           <input
             type="text"
@@ -120,7 +119,6 @@ const Register = () => {
             value={phone}
             onChange={(e) => setPhone(handlePhoneInput(e.target.value))}
           />
-          <br />
 
           <input
             type="password"
@@ -129,7 +127,6 @@ const Register = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <br />
 
           <input
             type="password"
@@ -138,13 +135,17 @@ const Register = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <br />
 
           <button type="submit">Register</button>
 
+          {/* Login link (text style) */}
           <div className="login-link">
-            Already have an account? <a href="/login">Login</a>
+            Already have an account?
+            <span className="login-text" onClick={onBackToLogin}>
+              Login
+            </span>
           </div>
+
         </form>
       </div>
 
