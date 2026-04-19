@@ -32,7 +32,7 @@ const Register = ({ onBackToLogin }) => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.74:5001/api/users", {
+      const response = await fetch("http://10.24.9.81:5001/api/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
