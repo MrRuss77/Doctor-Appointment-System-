@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import connectDatabase from "./config/db.js";
 import Appointment from "./models/Appointment.js";
+import { departmentCatalog, doctorCatalog } from "./data/catalog.js";
 import Department from "./models/Department.js";
 import Doctor from "./models/Doctor.js";
 import Registration from "./models/Registration.js";
@@ -20,20 +21,11 @@ const seedDatabase = async () => {
       User.deleteMany({})
     ]);
 
-    const departments = await Department.insertMany([
-      {
-        name: "Cardiology",
-        description: "Heart and blood vessel care"
-      },
-      {
-        name: "Neurology",
-        description: "Brain, spine, and nervous system care"
-      },
-      {
-        name: "Pediatrics",
-        description: "Healthcare for infants, children, and teenagers"
-      }
-    ]);
+    const departments = await Department.insertMany(departmentCatalog);
+
+    const departmentMap = Object.fromEntries(
+      departments.map((department) => [department.name, department._id])
+    );
 
     const users = await User.insertMany([
       {
@@ -54,30 +46,12 @@ const seedDatabase = async () => {
       }
     ]);
 
-    const doctors = await Doctor.insertMany([
-      {
-        fullName: "Dr. Arya Dev Rijal",
-        email: "arya.rijal@example.com",
-        phone: "9801000001",
-        department: departments[0]._id,
-        specialization: "Interventional Cardiologist",
-        qualification: "MBBS, MD, DM Cardiology",
-        experienceYears: 10,
-        availabilityText: "Available weekdays",
-        consultationFee: 1500
-      },
-      {
-        fullName: "Dr. Russ Karki",
-        email: "russ.karki@example.com",
-        phone: "9801000002",
-        department: departments[1]._id,
-        specialization: "Clinical Neurologist",
-        qualification: "MBBS, MD, Fellowship in Neurology",
-        experienceYears: 8,
-        availabilityText: "Available Mon-Wed-Fri",
-        consultationFee: 1800
-      }
-    ]);
+    const doctors = await Doctor.insertMany(
+      doctorCatalog.map(({ departmentName, ...doctor }) => ({
+        ...doctor,
+        department: departmentMap[departmentName]
+      }))
+    );
 
     await Registration.create({
       user: users[0]._id,
@@ -89,8 +63,8 @@ const seedDatabase = async () => {
 
     await Appointment.create({
       patient: users[0]._id,
-      doctor: doctors[0]._id,
-      department: departments[0]._id,
+      doctor: doctors[1]._id,
+      department: departmentMap.Cardiology,
       appointmentDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
       status: "confirmed",
       reason: "Chest pain consultation"

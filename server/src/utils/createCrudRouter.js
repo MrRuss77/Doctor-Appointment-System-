@@ -1,16 +1,17 @@
 import express from "express";
+import asyncHandler from "./asyncHandler.js";
 
 const createCrudRouter = (Model, populate = []) => {
   const router = express.Router();
 
-  router.get("/", async (_req, res) => {
+  router.get("/", asyncHandler(async (_req, res) => {
     const query = Model.find().sort({ createdAt: -1 });
     populate.forEach((field) => query.populate(field));
     const items = await query;
     res.json(items);
-  });
+  }));
 
-  router.get("/:id", async (req, res) => {
+  router.get("/:id", asyncHandler(async (req, res) => {
     const query = Model.findById(req.params.id);
     populate.forEach((field) => query.populate(field));
     const item = await query;
@@ -20,14 +21,14 @@ const createCrudRouter = (Model, populate = []) => {
     }
 
     return res.json(item);
-  });
+  }));
 
-  router.post("/", async (req, res) => {
+  router.post("/", asyncHandler(async (req, res) => {
     const item = await Model.create(req.body);
     return res.status(201).json(item);
-  });
+  }));
 
-  router.put("/:id", async (req, res) => {
+  router.put("/:id", asyncHandler(async (req, res) => {
     const item = await Model.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -38,9 +39,9 @@ const createCrudRouter = (Model, populate = []) => {
     }
 
     return res.json(item);
-  });
+  }));
 
-  router.delete("/:id", async (req, res) => {
+  router.delete("/:id", asyncHandler(async (req, res) => {
     const item = await Model.findByIdAndDelete(req.params.id);
 
     if (!item) {
@@ -48,7 +49,7 @@ const createCrudRouter = (Model, populate = []) => {
     }
 
     return res.json({ message: "Record deleted successfully." });
-  });
+  }));
 
   return router;
 };

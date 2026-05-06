@@ -1,0 +1,257 @@
+.doctor-page {
+  display: flex;
+  min-height: calc(100vh - 84px);
+  background: transparent;
+}
+
+/* Sidebar */
+.doctor-sidebar {
+  width: 250px;
+  background: white;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 20px;
+  box-shadow: 2px 0 15px rgba(0,0,0,0.02);
+}
+
+.doctor-profile-sidebar {
+  margin-bottom: 40px;
+  padding-left: 10px;
+}
+
+.doctor-profile-sidebar h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 15px 0;
+}
+
+.doctor-profile-sidebar .name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.doctor-profile-sidebar .specialty {
+  font-size: 13px;
+  color: #0ea5e9;
+  display: block;
+}
+
+.doctor-nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.doctor-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #334155;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  text-align: left;
+}
+
+.doctor-nav-item:hover {
+  background: #f1f5f9;
+}
+
+.doctor-nav-item.active {
+  background: #0ea5e9; /* Light blue pill for active */
+  color: white;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+.doctor-nav-item svg {
+  width: 20px;
+  height: 20px;
+}
+
+.doctor-logout {
+  color: #ef4444;
+  margin-top: auto;
+}
+
+.doctor-logout:hover {
+  background: #fef2f2;
+}
+
+/* Main Content */
+.doctor-main-content {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+.doctor-view-title {
+  font-size: 24px;
+  font-weight: 500;
+  color: #1e293b;
+  margin-top: 0;
+  margin-bottom: 30px;
+}
+
+/* Shared Buttons */
+.doctor-btn-primary {
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  transition: all 0.2s;
+}
+
+.doctor-btn-primary:hover {
+  background: #0284c7;
+}
+
+.doctor-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+/* Availability Grid */
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+}
+
+.availability-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.availability-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.availability-card-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1e293b;
+}
+
+.availability-edit {
+  font-size: 12px;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.availability-edit:hover {
+  color: #0ea5e9;
+}
+
+.availability-slot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.availability-slot:last-child {
+  margin-bottom: 0;
+}
+
+.availability-time {
+  font-size: 14px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.availability-pill {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.availability-pill.available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.availability-pill.unavailable {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* Patients Table */
+.patients-table-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  overflow: hidden;
+}
+
+.patients-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.patients-table th, .patients-table td {
+  padding: 16px 24px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.patients-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.patients-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.patients-table td.actions {
+  text-align: right;
+}
+
+.btn-view {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid #bae6fd;
+  background: transparent;
+  color: #0ea5e9;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-view:hover {
+  background: #f0f9ff;
+}

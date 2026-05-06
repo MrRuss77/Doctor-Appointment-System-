@@ -29,24 +29,37 @@ const createFallbackAvatar = (name) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-const DoctorCard = ({ doctor }) => {
+const DoctorCard = ({ doctor, onBookAppointment }) => {
   const [tab, setTab] = useState("specialization");
   const [imageSrc, setImageSrc] = useState(doctor.image || createFallbackAvatar(doctor.name));
 
   return (
     <article className="doctor-card">
       <div className="doctor-card__top">
-        <img
-          className="doctor-card__image"
-          src={imageSrc}
-          alt={doctor.name}
-          onError={() => setImageSrc(createFallbackAvatar(doctor.name))}
-        />
+        <div style={{ width: "120px", height: "120px", overflow: "hidden", borderRadius: "50%", border: "4px solid #f1f5f9", flexShrink: 0 }}>
+          <img
+            className="doctor-card__image"
+            src={imageSrc}
+            alt={doctor.name}
+            onError={() => setImageSrc(createFallbackAvatar(doctor.name))}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
 
-        <div className="doctor-card__content">
+        <div className="doctor-card__content" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <h3>{doctor.name}</h3>
           <p className="doctor-card__field">{doctor.field}</p>
           <p className="doctor-card__availability">{doctor.availability}</p>
+          <div className="doctor-card__actions">
+            <button
+              type="button"
+              className="doctor-card__book-link"
+              onClick={() => onBookAppointment?.(doctor)}
+            >
+              Book an appointment
+            </button>
+            <span className="doctor-card__meta">Patient-ready profile</span>
+          </div>
         </div>
       </div>
 

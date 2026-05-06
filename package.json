@@ -5,13 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
     "server": "node server/src/index.js",
     "dev:server": "nodemon server/src/index.js",
     "seed": "node server/src/seed.js",
+    "sync:catalog": "node server/src/syncCatalog.js",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -20,10 +17,6 @@
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "mongoose": "^8.19.2",
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

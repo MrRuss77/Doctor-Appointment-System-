@@ -1,0 +1,84 @@
+import React, { useState } from "react";
+import anesthesiologyImg from "../components/departments/Anesthiology.png";
+import cardiacImg from "../components/departments/Cardiology.png";
+import dentistImg from "../components/departments/dentist.png.png";
+import entImg from "../components/departments/ENT.png";
+import gynecologistImg from "../components/departments/Gynecologist.png";
+import orthopedicsImg from "../components/departments/Orthopedics.png";
+import pediatricsImg from "../components/departments/Pediatrics.png";
+import psychiatristImg from "../components/departments/Physiactrist.png";
+import neurologyImg from "../components/departments/Neurology.png";
+
+const departmentData = [
+  { name: "Anesthiology", image: anesthesiologyImg },
+  { name: "Dentist", image: dentistImg },
+  { name: "Physiactrist", image: psychiatristImg },
+  { name: "Gynecologist", image: gynecologistImg },
+  { name: "Cardiology", image: cardiacImg },
+  { name: "Neurology", image: neurologyImg },
+  { name: "Pediatrics", image: pediatricsImg },
+  { name: "Orthopedics", image: orthopedicsImg },
+  { name: "ENT", desc: "Ear, Nose and Throat", image: entImg }
+];
+
+const Departments = ({ onSelectDepartment }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filtered = departmentData.filter(d => 
+    d.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div style={{ padding: "40px", maxWidth: "1200px", margin: "0 auto" }}>
+      
+      {/* Search Bar */}
+      <div style={{ marginBottom: "40px" }}>
+        <div style={{ position: "relative", width: "400px" }}>
+          <svg style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", color: "#e0f2fe" }} viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input 
+            type="text" 
+            placeholder="Search Departments..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: "100%", padding: "16px 20px 16px 55px", borderRadius: "30px", border: "none", background: "#3b82f6", color: "white", outline: "none", fontSize: "16px", fontWeight: "500", boxShadow: "0 4px 15px rgba(59, 130, 246, 0.2)" }}
+          />
+          <style>{`
+            ::placeholder { color: #bae6fd; opacity: 1; }
+          `}</style>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "30px", marginTop: "20px" }}>
+        {filtered.map((dept, idx) => (
+          <button 
+            key={idx}
+            onClick={() => onSelectDepartment?.(dept.name)}
+            style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "25px", 
+              background: "white", 
+              border: "2px solid #38bdf8", 
+              borderRadius: "40px", 
+              padding: "25px 40px", 
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+            onMouseOver={(e) => e.currentTarget.style.boxShadow = "0 8px 25px rgba(14, 165, 233, 0.2)"}
+            onMouseOut={(e) => e.currentTarget.style.boxShadow = "none"}
+          >
+            <img src={dept.image} alt={dept.name} style={{ width: "65px", height: "65px", objectFit: "contain" }} />
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: "20px", color: "#0f172a", fontWeight: "600" }}>{dept.name}</div>
+              {dept.desc && <div style={{ fontSize: "14px", color: "#475569", marginTop: "4px", fontWeight: "500" }}>{dept.desc}</div>}
+            </div>
+          </button>
+        ))}
+      </div>
+
+    </div>
+  );
+};
+
+export default Departments;
