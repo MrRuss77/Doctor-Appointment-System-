@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import Doctors from "./pages/Doctors";
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
+import Footer from "./components/Footer";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import "./App.css";
 
@@ -54,7 +55,14 @@ function App() {
         authUser={authUser}
         onLogout={handleLogout}
       />
-      <main className="app-main" style={activePage === "admin" || activePage === "doctor" ? { padding: 0, width: "100%", maxWidth: "100%" } : {}}>
+      <main
+        className="app-main"
+        style={
+          activePage === "admin" || activePage === "doctor"
+            ? { padding: 0, width: "100%", maxWidth: "100%" }
+            : {}
+        }
+      >
         {activePage === "admin" ? (
           <AdminDashboard onLogout={handleLogout} onBack={handleBack} />
         ) : activePage === "doctor" ? (
@@ -76,6 +84,7 @@ function App() {
           />
         )}
       </main>
+      <Footer onNavigate={handleNavigate} />
     </div>
   );
 }
