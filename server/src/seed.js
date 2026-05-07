@@ -31,17 +31,17 @@ const seedDatabase = async () => {
       {
         firstName: "Prasanna",
         lastName: "Patient",
-        email: "prasanna@example.com",
+        email: "prasanna@gmail.com",
         phone: "9800000001",
-        password: "change-this-password",
+        password: "prasanna",
         role: "patient"
       },
       {
         firstName: "Admin",
         lastName: "User",
-        email: "admin@example.com",
+        email: "admin@gmail.com",
         phone: "9800000002",
-        password: "change-this-password",
+        password: "admin",
         role: "admin"
       }
     ]);
