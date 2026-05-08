@@ -7,6 +7,9 @@ const AuthIcon = () => (
   </svg>
 );
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phonePattern = /^\+?[0-9][0-9\s-]{6,19}$/;
+
 const RegisterCard = ({ onRegister, onBackToLogin }) => {
   const [form, setForm] = useState({
     fullName: "",
@@ -40,14 +43,34 @@ const RegisterCard = ({ onRegister, onBackToLogin }) => {
       return;
     }
 
+    const nameParts = form.fullName.trim().split(/\s+/);
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ");
+
+    if (firstName.length < 2 || lastName.length < 2) {
+      setMessage("Please enter your first and last name.");
+      return;
+    }
+
+    if (!emailPattern.test(form.email.trim().toLowerCase())) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+
+    if (!phonePattern.test(form.phone.trim())) {
+      setMessage("Please enter a valid phone number.");
+      return;
+    }
+
+    if (form.password.trim().length < 6) {
+      setMessage("Password must be at least 6 characters long.");
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setMessage("Passwords do not match.");
       return;
     }
-
-    const nameParts = form.fullName.trim().split(" ");
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
 
     onRegister?.({
       firstName,

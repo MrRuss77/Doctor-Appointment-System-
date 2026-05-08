@@ -12,6 +12,7 @@ import {
   fetchUsers,
   loginUser,
   requestPasswordReset,
+  sendOtp,
   verifyOtpCode
 } from "../src/api/client";
 
@@ -204,6 +205,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
   const [doctors, setDoctors] = useState(fallbackDoctorData);
   const [doctorsError, setDoctorsError] = useState("");
+  const [doctorSearch, setDoctorSearch] = useState("");
 
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [doctorTab, setDoctorTab] = useState("specialization");
@@ -218,25 +220,56 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
   const showDepartments = activePage === "departments";
 
   useEffect(() => {
+    let isActive = true;
+
     const loadDoctors = async () => {
       try {
-        const doctorRecords = await fetchDoctors();
-        setDoctorsError("");
+        const doctorRecords = await fetchDoctors(doctorSearch);
+
+        if (!isActive) {
+          return;
+        }
 
         if (doctorRecords.length > 0) {
+          setDoctorsError("");
           setDoctors(doctorRecords.map(mapDoctorRecord));
         } else {
-          setDoctors(fallbackDoctorData);
-          setDoctorsError("No doctors found yet. Showing sample doctors.");
+          setDoctors([]);
+          setDoctorsError(doctorSearch.trim() ? "" : "No doctors found yet.");
         }
       } catch (error) {
-        setDoctors(fallbackDoctorData);
+        if (!isActive) {
+          return;
+        }
+
+        const normalizedSearch = doctorSearch.trim().toLowerCase();
+        const fallbackDoctors = normalizedSearch
+          ? fallbackDoctorData.filter((doctor) =>
+              [
+                doctor.name,
+                doctor.field,
+                doctor.specialization,
+                doctor.qualification,
+                doctor.availability
+              ]
+                .join(" ")
+                .toLowerCase()
+                .includes(normalizedSearch)
+            )
+          : fallbackDoctorData;
+
+        setDoctors(fallbackDoctors);
         setDoctorsError(`Backend doctors are unavailable right now. Showing sample doctors instead.`);
       }
     };
 
-    loadDoctors();
-  }, []);
+    const searchTimer = setTimeout(loadDoctors, doctorSearch.trim() ? 250 : 0);
+
+    return () => {
+      isActive = false;
+      clearTimeout(searchTimer);
+    };
+  }, [doctorSearch]);
 
   useEffect(() => {
     setSelectedDoctor(null);
@@ -268,6 +301,10 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     setDoctorTab("specialization");
     setBookingForm(emptyBookingForm);
     setBookingMessage("");
+  };
+
+  const clearDoctorSearch = () => {
+    setDoctorSearch("");
   };
 
   const filteredDoctors = doctorFilter
@@ -331,7 +368,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       const response = await requestPasswordReset(requestPayload);
       setResetPayload(requestPayload);
       setLoginView("otp");
-      setAuthMessage(`${response.message} OTP code: ${response.otp}`);
+      setAuthMessage(response.message);
     } catch (error) {
       setAuthMessage(error.message);
     } finally {
@@ -356,8 +393,10 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         role: "patient"
       });
 
-      setAuthMessage("Registration successful. Please login with your new account.");
-      setLoginView("login");
+      const response = await sendOtp({ email: payload.email });
+      setResetPayload({ email: payload.email });
+      setAuthMessage(`Registration successful. ${response.message}`);
+      setLoginView("otp");
     } catch (error) {
       setAuthMessage(error.message);
     } finally {
@@ -379,7 +418,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
     try {
       await verifyOtpCode({ email: resetPayload.email, otp: otpCode });
-      setAuthMessage("OTP verified successfully. Please login with your new password.");
+      setAuthMessage("OTP verified successfully. Please login to continue.");
       setLoginView("login");
     } catch (error) {
       setAuthMessage(error.message);
@@ -401,8 +440,10 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     setAuthBusy(true);
 
     try {
-      const response = await requestPasswordReset(resetPayload);
-      setAuthMessage(`A new OTP has been sent. OTP code: ${response.otp}`);
+      const response = resetPayload.phone && resetPayload.password
+        ? await requestPasswordReset(resetPayload)
+        : await sendOtp({ email: resetPayload.email });
+      setAuthMessage(response.message);
     } catch (error) {
       setAuthMessage(error.message);
     } finally {
@@ -740,6 +781,22 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
             {doctorsError ? (
               <p className="auth-card__message auth-card__message--error" style={{ margin: "0 0 6px" }}>{doctorsError}</p>
             ) : null}
+            <div className="doctor-search">
+              <label className="doctor-search__field">
+                <span>Search doctors</span>
+                <input
+                  type="search"
+                  placeholder="Search by doctor, department, or specialization"
+                  value={doctorSearch}
+                  onChange={(event) => setDoctorSearch(event.target.value)}
+                />
+              </label>
+              {doctorSearch.trim() ? (
+                <button type="button" className="doctor-search__clear" onClick={clearDoctorSearch}>
+                  Clear
+                </button>
+              ) : null}
+            </div>
             <div className="doctor-grid">
               {filteredDoctors.length > 0 ? (
                 filteredDoctors.map((doc) => (
@@ -752,7 +809,9 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
               ) : (
                 <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px 20px" }}>
                   <p style={{ fontSize: "18px", color: "#64748b" }}>
-                    No doctors available in this department right now.
+                    {doctorSearch.trim()
+                      ? "No doctors match your search right now."
+                      : "No doctors available in this department right now."}
                   </p>
                 </div>
               )}

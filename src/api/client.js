@@ -9,12 +9,12 @@ const getErrorMessage = (payload) => {
     return payload;
   }
 
-  if (payload.message) {
-    return payload.message;
-  }
-
   if (Array.isArray(payload.errors) && payload.errors.length > 0) {
     return payload.errors.join(" ");
+  }
+
+  if (payload.message) {
+    return payload.message;
   }
 
   return "Request failed.";
@@ -55,7 +55,14 @@ const request = async (path, options = {}) => {
   return payload;
 };
 
-export const fetchDoctors = async () => request("/doctors");
+export const fetchDoctors = async (query = "") => {
+  const trimmedQuery = query.trim();
+  const path = trimmedQuery
+    ? `/doctors/search?q=${encodeURIComponent(trimmedQuery)}`
+    : "/doctors";
+
+  return request(path);
+};
 export const fetchDepartments = async () => request("/departments");
 export const fetchAppointments = async () => request("/appointments");
 export const fetchUsers = async () => request("/users");
@@ -80,6 +87,12 @@ export const updateAppointment = async (appointmentId, body) =>
 
 export const loginUser = async (body) =>
   request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+
+export const sendOtp = async (body) =>
+  request("/auth/send-otp", {
     method: "POST",
     body: JSON.stringify(body)
   });

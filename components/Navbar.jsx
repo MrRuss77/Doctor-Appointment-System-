@@ -15,11 +15,15 @@ const AmbulanceIcon = () => (
 
 const Navbar = ({ activePage, onNavigate, authUser, onLogout, onBack }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdmin = authUser?.role === "admin";
+  const isDoctor = authUser?.role === "doctor";
+  const canOpenDoctorPanel = isDoctor || isAdmin;
+
   const navItems = [
     { id: "home", label: "Home" },
     { id: "doctors", label: "Doctors" },
     { id: "departments", label: "Departments" },
-    ...(authUser && authUser.role !== "admin" ? [{ id: "logout", label: "Logout" }] : []),
+    ...(authUser && !isAdmin ? [{ id: "logout", label: "Logout" }] : []),
     ...(!authUser ? [{ id: "login", label: "Login" }] : [])
   ];
 
@@ -78,26 +82,32 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout, onBack }) => {
           </button>
         ))}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginLeft: '20px' }}>
-          <button 
-            type="button" 
-            className="nav-cta" 
-            style={{ padding: '10px 20px', background: '#bae6fd', color: '#0369a1', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
-            onClick={() => handleNavigate("doctor")}
-          >
-            Doctor Panel
-          </button>
-          <button 
-            type="button" 
-            className="nav-cta" 
-            style={{ padding: '10px 20px', background: '#0ea5e9', color: 'white', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
-            onClick={() => handleNavigate("admin")}
-          >
-            Admin Panel
-          </button>
-        </div>
+        {(canOpenDoctorPanel || isAdmin) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginLeft: '20px' }}>
+            {canOpenDoctorPanel && (
+              <button
+                type="button"
+                className="nav-cta"
+                style={{ padding: '10px 20px', background: '#bae6fd', color: '#0369a1', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
+                onClick={() => handleNavigate("doctor")}
+              >
+                Doctor Panel
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                type="button"
+                className="nav-cta"
+                style={{ padding: '10px 20px', background: '#0ea5e9', color: 'white', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '14px' }}
+                onClick={() => handleNavigate("admin")}
+              >
+                Admin Panel
+              </button>
+            )}
+          </div>
+        )}
 
-        {authUser && authUser.role === "admin" && (
+        {authUser && isAdmin && (
           <div className="nav-utility" style={{ marginLeft: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }} onClick={() => handleNavigate("logout")}>
               <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "#3b82f6", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>
@@ -110,10 +120,10 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout, onBack }) => {
             </div>
           </div>
         )}
-        {authUser && authUser.role !== "admin" && (
+        {authUser && !isAdmin && (
           <div className="nav-utility">
             <div className="nav-user-pill" aria-label="Current signed in user">
-              <span>Patient portal</span>
+              <span>{isDoctor ? "Doctor portal" : "Patient portal"}</span>
             </div>
           </div>
         )}
