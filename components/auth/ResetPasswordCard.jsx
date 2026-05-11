@@ -7,32 +7,37 @@ const AuthIcon = () => (
   </svg>
 );
 
-const ResetPasswordCard = ({ onBackToLogin, onReset }) => {
+const ResetPasswordCard = ({ step = "email", onBackToLogin, onSubmitEmail, onSubmitPasswords }) => {
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleReset = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!email.trim() || !phone.trim() || !password.trim() || !verifyPassword.trim()) {
-      setMessage("Please fill all fields.");
-      return;
+    if (step === "email") {
+      if (!email.trim()) {
+        setMessage("Please enter your email address.");
+        return;
+      }
+      setMessage("");
+      onSubmitEmail?.(email.trim());
+    } else if (step === "password") {
+      if (!password.trim() || !verifyPassword.trim()) {
+        setMessage("Please fill both password fields.");
+        return;
+      }
+      if (password !== verifyPassword) {
+        setMessage("Passwords do not match.");
+        return;
+      }
+      if (password.trim().length < 6) {
+        setMessage("Password must be at least 6 characters long.");
+        return;
+      }
+      setMessage("");
+      onSubmitPasswords?.({ password, verifyPassword });
     }
-
-    if (password !== verifyPassword) {
-      setMessage("Passwords do not match.");
-      return;
-    }
-
-    setMessage("");
-    onReset?.({
-      email: email.trim(),
-      phone: phone.trim(),
-      password,
-      verifyPassword
-    });
   };
 
   return (
@@ -44,56 +49,48 @@ const ResetPasswordCard = ({ onBackToLogin, onReset }) => {
           <h2 className="auth-title">Reset Password</h2>
         </div>
 
-        <form onSubmit={handleReset}>
-          <label>
-            Email Address
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setMessage("");
-              }}
-            />
-          </label>
+        <form onSubmit={handleSubmit}>
+          {step === "email" ? (
+            <label>
+              Email Address
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setMessage("");
+                }}
+              />
+            </label>
+          ) : (
+            <>
+              <label>
+                New Password
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setMessage("");
+                  }}
+                />
+              </label>
 
-          <label>
-            Phone Number
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                setMessage("");
-              }}
-            />
-          </label>
+              <label>
+                Verify New Password
+                <input
+                  type="password"
+                  value={verifyPassword}
+                  onChange={(e) => {
+                    setVerifyPassword(e.target.value);
+                    setMessage("");
+                  }}
+                />
+              </label>
+            </>
+          )}
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setMessage("");
-              }}
-            />
-          </label>
-
-          <label>
-            Verify Password
-            <input
-              type="password"
-              value={verifyPassword}
-              onChange={(e) => {
-                setVerifyPassword(e.target.value);
-                setMessage("");
-              }}
-            />
-          </label>
-
-          <button type="submit">Reset</button>
+          <button type="submit">{step === "email" ? "Send OTP" : "Reset Password"}</button>
         </form>
 
         {message && (

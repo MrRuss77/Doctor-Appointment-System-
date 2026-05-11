@@ -4,6 +4,7 @@ import Doctors from "./pages/Doctors";
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import MediCareChat from "./src/components/MediCareChat";
 import "./App.css";
 
 function App() {
@@ -12,8 +13,17 @@ function App() {
   const [doctorFilter, setDoctorFilter] = useState("");
   const [authUser, setAuthUser] = useState(null);
   const [welcomeName, setWelcomeName] = useState("");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleNavigate = (page, options = {}) => {
+    if (page === "admin" && authUser?.role !== "admin") {
+      page = authUser ? "home" : "login";
+    }
+
+    if (page === "doctor" && authUser?.role !== "doctor" && authUser?.role !== "admin") {
+      page = authUser ? "home" : "login";
+    }
+
     if (page !== activePage) {
       setPreviousPages((prev) => [...prev, activePage]);
     }
@@ -39,10 +49,19 @@ function App() {
     setActivePage("home");
   };
 
+  const requestLogout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
   const handleLogout = () => {
     setAuthUser(null);
     setWelcomeName("");
     setPreviousPages([]);
+    setShowLogoutConfirm(false);
     setActivePage("home");
   };
 
@@ -52,13 +71,13 @@ function App() {
         activePage={activePage}
         onNavigate={handleNavigate}
         authUser={authUser}
-        onLogout={handleLogout}
+        onLogout={requestLogout}
       />
       <main className="app-main" style={activePage === "admin" || activePage === "doctor" ? { padding: 0, width: "100%", maxWidth: "100%" } : {}}>
-        {activePage === "admin" ? (
-          <AdminDashboard onLogout={handleLogout} onBack={handleBack} />
-        ) : activePage === "doctor" ? (
-          <DoctorDashboard onLogout={handleLogout} onBack={handleBack} />
+        {activePage === "admin" && authUser?.role === "admin" ? (
+          <AdminDashboard onLogout={requestLogout} onBack={handleBack} />
+        ) : activePage === "doctor" && (authUser?.role === "doctor" || authUser?.role === "admin") ? (
+          <DoctorDashboard onLogout={requestLogout} onBack={handleBack} />
         ) : activePage === "home" ? (
           <Home
             onNavigate={handleNavigate}
@@ -76,6 +95,26 @@ function App() {
           />
         )}
       </main>
+
+      {showLogoutConfirm && (
+        <div className="logout-dialog" role="presentation">
+          <div className="logout-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title">
+            <p className="logout-dialog__eyebrow">Account session</p>
+            <h2 id="logout-dialog-title">Confirm logout?</h2>
+            <p className="logout-dialog__text">You will be returned to the home page and need to sign in again to access your portal.</p>
+            <div className="logout-dialog__actions">
+              <button type="button" className="logout-dialog__cancel" onClick={cancelLogout}>
+                Stay logged in
+              </button>
+              <button type="button" className="logout-dialog__confirm" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <MediCareChat />
     </div>
   );
 }

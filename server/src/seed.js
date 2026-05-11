@@ -43,6 +43,14 @@ const seedDatabase = async () => {
         phone: "9800000002",
         password: "admin",
         role: "admin"
+      },
+      {
+        firstName: "Doctor",
+        lastName: "User",
+        email: "doctor@example.com",
+        phone: "9800000003",
+        password: "change-this-password",
+        role: "doctor"
       }
     ]);
 
