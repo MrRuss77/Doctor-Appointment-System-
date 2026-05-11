@@ -1,68 +1,88 @@
 import express from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 const router = express.Router();
 
-const systemInstruction = `You are MediCare, a friendly and professional AI health assistant for a medical platform.
-Help users with general health questions, appointment guidance, and navigating the platform.
-Always be empathetic, clear, and remind users to consult a real doctor for medical advice.`;
+const systemInstruction = `You are MediCare, the AI health assistant for an online doctor appointment platform.
 
-const getChatModel = () => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured.");
+ABOUT THIS PLATFORM:
+- Patients can search for doctors by specialty, location, and availability
+- Patients can book, reschedule, and cancel appointments online
+- Doctors available include general practitioners, cardiologists, pediatricians, dermatologists, and more
+- Patients can view their appointment history and medical records on the platform
+- The platform is available 24/7 but doctors have specific working hours
+- For emergencies, always direct users to call emergency services or visit the nearest hospital
+
+YOUR PERSONALITY AND RULES:
+- Be warm, empathetic, and professional
+- Give concise answers — short if the question is simple, detailed only when truly needed
+- Never give long bullet-point lists unless the user specifically asks for them
+- Never repeat yourself or add unnecessary disclaimers on every single message
+- You can remind users to see a doctor once per conversation, not in every reply
+- If the user tells you their name, remember it and use it naturally in conversation
+- If the user describes symptoms, acknowledge them briefly and guide them to book an appointment
+- If the user asks about available doctors, guide them to use the search/filter feature on the platform
+- Never make up specific doctor names, times, or prices
+- Keep responses human and conversational, not robotic
+
+USER CONTEXT:
+{{USER_CONTEXT}}`;
+
+let groqInstance = null;
+const getGroqClient = () => {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY is not configured in .env");
   }
-
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-  return genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction
-  });
+  if (!groqInstance) {
+    groqInstance = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return groqInstance;
 };
-
-const toGeminiMessage = (message) => ({
-  role: message.role === "assistant" ? "model" : "user",
-  parts: [{ text: message.content }]
-});
 
 router.post("/", async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { messages, userContext } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: "Messages are required." });
     }
 
     const cleanMessages = messages
-      .filter((message) =>
-        message &&
-        (message.role === "user" || message.role === "assistant") &&
-        typeof message.content === "string" &&
-        message.content.trim()
+      .filter((m) =>
+        m &&
+        (m.role === "user" || m.role === "assistant") &&
+        typeof m.content === "string" &&
+        m.content.trim()
       )
-      .map((message) => ({
-        role: message.role,
-        content: message.content.trim()
+      .map((m) => ({
+        role: m.role,
+        content: m.content.trim()
       }));
 
     const lastMessage = cleanMessages[cleanMessages.length - 1];
-
     if (!lastMessage || lastMessage.role !== "user") {
       return res.status(400).json({ message: "Last message must be from the user." });
     }
 
-    const history = cleanMessages.slice(0, -1).map(toGeminiMessage);
+    const filledInstruction = systemInstruction.replace(
+      "{{USER_CONTEXT}}",
+      userContext || "The user is a guest and has not logged in."
+    );
 
-    while (history[0]?.role === "model") {
-      history.shift();
-    }
+    const groq = getGroqClient();
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: filledInstruction },
+        ...cleanMessages
+      ]
+    });
 
-    const model = getChatModel();
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(lastMessage.content);
+    const reply = response.choices[0].message.content;
+    return res.json({ reply });
 
-    return res.json({ reply: result.response.text() });
   } catch (error) {
+    console.error("Groq error:", error.message);
     return res.status(500).json({
       message: error.message || "Failed to get MediCare response."
     });

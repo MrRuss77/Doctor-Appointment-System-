@@ -64,9 +64,9 @@ router.post("/login", async (req, res, next) => {
 
 router.post("/reset-password", async (req, res, next) => {
   try {
-    const { email, phone, password, confirmPassword } = req.body;
+    const { email, password, confirmPassword } = req.body;
 
-    if (!email || !phone || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword) {
       return res.status(400).json({ message: "All reset fields are required." });
     }
 
@@ -74,35 +74,40 @@ router.post("/reset-password", async (req, res, next) => {
       return res.status(400).json({ message: "Passwords do not match." });
     }
 
-    if (!isValidEmail(normalizeEmail(email))) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
-    }
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!isValidPhone(normalizePhone(phone))) {
-      return res.status(400).json({ message: "Please provide a valid phone number." });
+    if (!isValidEmail(normalizedEmail)) {
+      return res.status(400).json({ message: "Please provide a valid email address." });
     }
 
     if (String(password).trim().length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters long." });
     }
 
-    const user = await User.findOne({
-      email: normalizeEmail(email),
-      phone: normalizePhone(phone)
-    });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(404).json({ message: "No user found with that email and phone number." });
+      return res.status(404).json({ message: "No user found with that email." });
+    }
+
+    const verifiedOtp = await OTP.findOne({
+      email: normalizedEmail,
+      used: true
+    }).sort({ updatedAt: -1 });
+
+    if (!verifiedOtp) {
+      return res.status(400).json({ message: "No verified OTP found for this email. Please verify OTP first." });
     }
 
     user.password = password;
     user.resetOtp = null;
     user.resetOtpExpiresAt = null;
     await user.save();
-    await createAndSendOTP(user.email);
+
+    await OTP.deleteOne({ _id: verifiedOtp._id });
 
     return res.json({
-      message: "Password reset request accepted. Please check your email for the OTP code."
+      message: "Password reset successfully. You can now login."
     });
   } catch (error) {
     return next(error);
@@ -123,7 +128,14 @@ router.post("/send-otp", async (req, res, next) => {
       return res.status(400).json({ message: "Please provide a valid email address." });
     }
 
-    await createAndSendOTP(normalizedEmail);
+    try {
+      await createAndSendOTP(normalizedEmail);
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      return res.status(500).json({ 
+        message: "Failed to send OTP email. This might be due to email provider rate limits or configuration. Please try again later." 
+      });
+    }
 
     return res.json({
       message: "OTP sent successfully. Please check your email."

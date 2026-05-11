@@ -136,9 +136,32 @@ const CloseIcon = () => (
   </svg>
 );
 
+const getUserContext = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) return null;
+    return `The user's name is ${user.firstName} ${user.lastName}, their email is ${user.email}.`;
+  } catch {
+    return null;
+  }
+};
+
+const STORAGE_KEY = "medicare_chat_history";
+
 const MediCareChat = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([defaultMessage]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [defaultMessage];
+    } catch {
+      return [defaultMessage];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -169,7 +192,10 @@ const MediCareChat = () => {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ messages: nextMessages })
+        body: JSON.stringify({
+          messages: nextMessages,
+          userContext: getUserContext()
+        })
       });
       const data = await response.json();
 

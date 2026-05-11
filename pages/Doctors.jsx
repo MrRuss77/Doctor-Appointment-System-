@@ -350,25 +350,45 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     }
   };
 
-  const handleReset = async (payload) => {
+  const handleRequestOtp = async (email) => {
     if (authBusy) {
       return;
     }
 
     setAuthBusy(true);
 
-    const requestPayload = {
-      email: payload.email,
-      phone: payload.phone,
-      password: payload.password,
-      confirmPassword: payload.verifyPassword
-    };
-
     try {
-      const response = await requestPasswordReset(requestPayload);
-      setResetPayload(requestPayload);
+      const response = await sendOtp({ email });
+      setResetPayload({ email });
       setLoginView("otp");
       setAuthMessage(response.message);
+    } catch (error) {
+      setAuthMessage(error.message);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleUpdatePassword = async (passwords) => {
+    if (authBusy) {
+      return;
+    }
+
+    if (!resetPayload?.email) {
+      setAuthMessage("Start password reset first so we know which account to update.");
+      return;
+    }
+
+    setAuthBusy(true);
+
+    try {
+      const response = await requestPasswordReset({
+        email: resetPayload.email,
+        password: passwords.password,
+        confirmPassword: passwords.verifyPassword
+      });
+      setAuthMessage(response.message);
+      setLoginView("login");
     } catch (error) {
       setAuthMessage(error.message);
     } finally {
@@ -393,10 +413,8 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         role: "patient"
       });
 
-      const response = await sendOtp({ email: payload.email });
-      setResetPayload({ email: payload.email });
-      setAuthMessage(`Registration successful. ${response.message}`);
-      setLoginView("otp");
+      setAuthMessage(`Registration successful. Please login.`);
+      setLoginView("login");
     } catch (error) {
       setAuthMessage(error.message);
     } finally {
@@ -418,8 +436,8 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
     try {
       await verifyOtpCode({ email: resetPayload.email, otp: otpCode });
-      setAuthMessage("OTP verified successfully. Please login to continue.");
-      setLoginView("login");
+      setAuthMessage("OTP verified successfully. Please enter your new password.");
+      setLoginView("new-password");
     } catch (error) {
       setAuthMessage(error.message);
     } finally {
@@ -432,17 +450,15 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       return;
     }
 
-    if (!resetPayload) {
-      setAuthMessage("Please submit the reset form first.");
+    if (!resetPayload?.email) {
+      setAuthMessage("Please submit your email first.");
       return;
     }
 
     setAuthBusy(true);
 
     try {
-      const response = resetPayload.phone && resetPayload.password
-        ? await requestPasswordReset(resetPayload)
-        : await sendOtp({ email: resetPayload.email });
+      const response = await sendOtp({ email: resetPayload.email });
       setAuthMessage(response.message);
     } catch (error) {
       setAuthMessage(error.message);
@@ -580,11 +596,22 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     ),
     reset: (
       <ResetPasswordCard
+        step="email"
         onBackToLogin={() => {
           clearStatus();
           setLoginView("login");
         }}
-        onReset={handleReset}
+        onSubmitEmail={handleRequestOtp}
+      />
+    ),
+    "new-password": (
+      <ResetPasswordCard
+        step="password"
+        onBackToLogin={() => {
+          clearStatus();
+          setLoginView("login");
+        }}
+        onSubmitPasswords={handleUpdatePassword}
       />
     ),
     otp: (
