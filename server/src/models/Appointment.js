@@ -27,7 +27,7 @@ const appointmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled"],
+      enum: ["pending", "confirmed", "completed", "cancelled", "rejected"],
       default: "pending"
     },
     reason: {
@@ -41,6 +41,18 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [500, "Appointment notes cannot be longer than 500 characters."]
+    },
+    adminReply: {
+      type: String,
+      trim: true,
+      maxlength: [300, "Admin reply cannot be longer than 300 characters."]
+    },
+    respondedByRole: {
+      type: String,
+      enum: ["admin", "doctor", "system"]
+    },
+    respondedAt: {
+      type: Date
     }
   },
   {

@@ -1,5 +1,50 @@
 import mongoose from "mongoose";
+import {
+  isValidAvailabilityDate,
+  isValidTime24
+} from "../utils/availability.js";
 import { isValidEmail, isValidPhone } from "../utils/validators.js";
+
+const availabilitySlotSchema = new mongoose.Schema(
+  {
+    date: {
+      type: String,
+      required: [true, "Availability date is required."],
+      validate: {
+        validator: isValidAvailabilityDate,
+        message: "Availability date must use YYYY-MM-DD format."
+      }
+    },
+    startTime: {
+      type: String,
+      required: [true, "Availability start time is required."],
+      validate: {
+        validator: isValidTime24,
+        message: "Availability start time must use HH:mm format."
+      }
+    },
+    endTime: {
+      type: String,
+      required: [true, "Availability end time is required."],
+      validate: {
+        validator: isValidTime24,
+        message: "Availability end time must use HH:mm format."
+      }
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true
+    },
+    note: {
+      type: String,
+      trim: true,
+      maxlength: [120, "Availability note cannot be longer than 120 characters."]
+    }
+  },
+  {
+    _id: true
+  }
+);
 
 const doctorSchema = new mongoose.Schema(
   {
@@ -50,6 +95,10 @@ const doctorSchema = new mongoose.Schema(
       trim: true,
       maxlength: [120, "Availability text cannot be longer than 120 characters."]
     },
+    availabilitySlots: {
+      type: [availabilitySlotSchema],
+      default: []
+    },
     image: {
       type: String,
       trim: true,
@@ -79,6 +128,19 @@ doctorSchema.path("specialization").validate(
   (value) => value && value.trim().length >= 5,
   "Doctor specialization must be at least 5 characters long."
 );
+
+doctorSchema.path("availabilitySlots").validate((slots = []) => {
+  return slots.every((slot) => {
+    const start = slot?.startTime;
+    const end = slot?.endTime;
+
+    if (!start || !end || !isValidTime24(start) || !isValidTime24(end)) {
+      return false;
+    }
+
+    return start < end;
+  });
+}, "Each availability slot must have a valid time range.");
 
 const Doctor = mongoose.model("Doctor", doctorSchema);
 

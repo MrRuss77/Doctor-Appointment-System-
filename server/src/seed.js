@@ -1,7 +1,12 @@
 import dotenv from "dotenv";
 import connectDatabase from "./config/db.js";
 import Appointment from "./models/Appointment.js";
-import { departmentCatalog, doctorCatalog } from "./data/catalog.js";
+import {
+  departmentCatalog,
+  doctorCatalog,
+  doctorDefaultPassword,
+  platformUserCatalog
+} from "./data/catalog.js";
 import Department from "./models/Department.js";
 import Doctor from "./models/Doctor.js";
 import Registration from "./models/Registration.js";
@@ -27,32 +32,20 @@ const seedDatabase = async () => {
       departments.map((department) => [department.name, department._id])
     );
 
-    const users = await User.insertMany([
-      {
-        firstName: "Prasanna",
-        lastName: "Patient",
-        email: "prasanna@gmail.com",
-        phone: "9800000001",
-        password: "prasanna",
-        role: "patient"
-      },
-      {
-        firstName: "Admin",
-        lastName: "User",
-        email: "admin@gmail.com",
-        phone: "9800000002",
-        password: "admin",
-        role: "admin"
-      },
-      {
-        firstName: "Doctor",
-        lastName: "User",
-        email: "doctor@example.com",
-        phone: "9800000003",
-        password: "change-this-password",
+    const doctorUsers = doctorCatalog.map((doctor) => {
+      const parts = doctor.fullName.replace(/^Dr\.\s*/i, "").trim().split(/\s+/);
+
+      return {
+        firstName: parts[0] || "Doctor",
+        lastName: parts.slice(1).join(" ") || "User",
+        email: doctor.email,
+        phone: doctor.phone,
+        password: doctorDefaultPassword,
         role: "doctor"
-      }
-    ]);
+      };
+    });
+
+    const users = await User.insertMany([...platformUserCatalog, ...doctorUsers]);
 
     const doctors = await Doctor.insertMany(
       doctorCatalog.map(({ departmentName, ...doctor }) => ({

@@ -19,6 +19,13 @@ const errorHandler = (error, _req, res, _next) => {
     return res.status(400).json({ message: "Invalid record id." });
   }
 
+  if (error.statusCode) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      ...(error.errors ? { errors: error.errors } : {})
+    });
+  }
+
   return res.status(500).json({ message: "Internal server error." });
 };
 
