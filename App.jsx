@@ -74,6 +74,7 @@ function App() {
   };
 
   const isDashboardPage = activePage === "admin" || activePage === "doctor";
+  const isLoginPage = activePage === "login";
 
   return (
     <div className="app-shell">
@@ -121,7 +122,7 @@ function App() {
         )}
       </main>
 
-      {!isDashboardPage && <Footer onNavigate={handleNavigate} />}
+      {!isDashboardPage && !isLoginPage && <Footer onNavigate={handleNavigate} />}
 
       {showLogoutConfirm && (
         <div className="logout-dialog" role="presentation">
