@@ -109,13 +109,13 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
 
   return (
     <div className="doctor-dashboard-shell">
-      <button type="button" className="doctor-workspace-banner" aria-expanded="false">
-        <span>Doctor Workspace</span>
-        <span className="doctor-workspace-banner__chevron" aria-hidden="true">▾</span>
-      </button>
-
       <div className="doctor-page">
         <aside className="doctor-sidebar">
+          <div className="doctor-workspace-header">
+            <span className="doctor-workspace-title">DOCTOR WORKSPACE</span>
+            <h1 className="doctor-panel-title">Doctor Panel</h1>
+          </div>
+
           <div className="doctor-profile-sidebar">
             <div className="doctor-profile-card">
               {doctorImage ? (
