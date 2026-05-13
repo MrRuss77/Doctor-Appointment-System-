@@ -2409,10 +2409,15 @@ video {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(6, 182, 212, 0.16);
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid rgba(125, 211, 252, 0.8);
+}
+
+.patient-history-row__details {
+  display: grid;
+  gap: 3px;
 }
 
 .patient-history-row strong,
@@ -2422,30 +2427,133 @@ video {
 
 .patient-history-row strong {
   color: #111827;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .patient-history-row span {
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 13px;
+  margin-top: 0;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.patient-history-row__datetime {
+  color: #0284c7 !important;
+  font-weight: 800;
 }
 
 .patient-cancel-appointment-button {
   min-width: 92px;
   min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: none;
-  border-radius: 10px;
-  background: #ef4444;
-  color: #fff;
+  border-radius: 9px;
+  background: #fb7185;
+  color: #111827;
   font-size: 13px;
   font-weight: 800;
+  box-shadow: 0 8px 16px rgba(244, 63, 94, 0.2);
+}
+
+.patient-cancel-appointment-button__icon {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .patient-cancel-appointment-button:hover,
 .patient-cancel-appointment-button:focus-visible {
-  background: #dc2626;
+  background: #f43f5e;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.patient-cancel-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.86);
+}
+
+.patient-cancel-modal {
+  width: min(520px, 100%);
+  min-height: 250px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  padding: 38px 42px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top left, rgba(209, 250, 229, 0.72), transparent 42%),
+    linear-gradient(135deg, #f7ffff 0%, #f6f4ff 100%);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.patient-cancel-modal__icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.patient-cancel-modal__icon--warning {
+  background: #2f86ff;
+}
+
+.patient-cancel-modal__icon--success {
+  background: #0f9f58;
+}
+
+.patient-cancel-modal__title {
+  margin: 0;
+  background: linear-gradient(135deg, #0ea5b7, #7c8cff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.patient-cancel-modal__text {
+  margin: 20px 0 0;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.patient-cancel-modal__button {
+  min-width: 136px;
+  min-height: 42px;
+  margin-top: 22px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #06b6d4, #2488ff);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 10px 20px rgba(36, 136, 255, 0.22);
+}
+
+.patient-cancel-modal__button:hover,
+.patient-cancel-modal__button:focus-visible {
   transform: translateY(-1px);
   outline: none;
 }
@@ -2520,6 +2628,15 @@ video {
   .patient-history-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .patient-cancel-modal {
+    min-height: 230px;
+    padding: 32px 24px;
+  }
+
+  .patient-cancel-modal__title {
+    font-size: 19px;
   }
 }
 

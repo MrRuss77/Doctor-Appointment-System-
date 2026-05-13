@@ -2,7 +2,24 @@ import React, { useState } from "react";
 
 function PatientUserPage({ authUser }) {
   const [showAppointments, setShowAppointments] = useState(false);
-  const [appointmentHistory, setAppointmentHistory] = useState([]);
+  const [appointmentHistory, setAppointmentHistory] = useState([
+      {
+    id: "appt-1",
+    doctor: "John Smith",
+    reason: "Regular Checkup",
+    date: "2026-04-08",
+    time: "10:00 PM"
+  },
+  {
+    id: "appt-2",
+    doctor: "Subashna Maskey",
+    reason: "Stomachache",
+    date: "2026-04-08",
+    time: "10:00 PM"
+  }
+  ]);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [showCancelSuccess, setShowCancelSuccess] = useState(false);
 
   const fullName = `${authUser?.firstName || ""} ${authUser?.lastName || ""}`.trim();
 
@@ -14,12 +31,24 @@ function PatientUserPage({ authUser }) {
     gender: authUser?.gender || "Not provided"
   };
 
-  const handleCancelAppointment = async (appointmentId) => {
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel your appointment?"
-    );
+  const getAppointmentDateTime = (appointment) => {
+    if (appointment.date && appointment.time) {
+      return `${appointment.date} at ${appointment.time}`;
+    }
 
-    if (!confirmCancel) {
+    return appointment.date || appointment.time || "Date and time not provided";
+  };
+
+  const handleCancelClick = (appointment) => {
+    setAppointmentToCancel(appointment);
+  };
+
+  const handleCloseCancelPopup = () => {
+    setAppointmentToCancel(null);
+  };
+
+  const handleConfirmCancelAppointment = async () => {
+    if (!appointmentToCancel?.id) {
       return;
     }
 
@@ -27,7 +56,7 @@ function PatientUserPage({ authUser }) {
       Backend connection later:
 
       try {
-        const response = await fetch(`/api/appointments/${appointmentId}/cancel`, {
+        const response = await fetch(`/api/appointments/${appointmentToCancel.id}/cancel`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json"
@@ -39,13 +68,31 @@ function PatientUserPage({ authUser }) {
         }
 
         setAppointmentHistory((currentAppointments) =>
-          currentAppointments.filter((appointment) => appointment.id !== appointmentId)
+          currentAppointments.filter(
+            (appointment) => appointment.id !== appointmentToCancel.id
+          )
         );
+
+        setAppointmentToCancel(null);
+        setShowCancelSuccess(true);
       } catch (error) {
         console.error("Cancel appointment error:", error);
         alert("Unable to cancel appointment. Please try again.");
       }
     */
+
+    setAppointmentHistory((currentAppointments) =>
+      currentAppointments.filter(
+        (appointment) => appointment.id !== appointmentToCancel.id
+      )
+    );
+
+    setAppointmentToCancel(null);
+    setShowCancelSuccess(true);
+  };
+
+  const handleCloseSuccessPopup = () => {
+    setShowCancelSuccess(false);
   };
 
   return (
@@ -106,16 +153,20 @@ function PatientUserPage({ authUser }) {
               <div className="patient-history-list">
                 {appointmentHistory.map((appointment) => (
                   <div key={appointment.id} className="patient-history-row">
-                    <div>
+                    <div className="patient-history-row__details">
                       <strong>{appointment.doctor}</strong>
-                      <span>{appointment.date}</span>
+                      <span>{appointment.reason || "Appointment"}</span>
+                      <span className="patient-history-row__datetime">
+                        {getAppointmentDateTime(appointment)}
+                      </span>
                     </div>
 
                     <button
                       type="button"
                       className="patient-cancel-appointment-button"
-                      onClick={() => handleCancelAppointment(appointment.id)}
+                      onClick={() => handleCancelClick(appointment)}
                     >
+                      <span className="patient-cancel-appointment-button__icon">×</span>
                       Cancel
                     </button>
                   </div>
@@ -130,6 +181,68 @@ function PatientUserPage({ authUser }) {
           </div>
         )}
       </article>
+
+      {appointmentToCancel && (
+        <div className="patient-cancel-modal-overlay" role="presentation">
+          <div
+            className="patient-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-appointment-title"
+          >
+            <div className="patient-cancel-modal__icon patient-cancel-modal__icon--warning">
+              !
+            </div>
+
+            <h2 id="cancel-appointment-title" className="patient-cancel-modal__title">
+              Cancel Appointment ?
+            </h2>
+
+            <p className="patient-cancel-modal__text">
+              Are you sure you want to cancel this appointment?
+            </p>
+
+            <button
+              type="button"
+              className="patient-cancel-modal__button"
+              onClick={handleConfirmCancelAppointment}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showCancelSuccess && (
+        <div className="patient-cancel-modal-overlay" role="presentation">
+          <div
+            className="patient-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-success-title"
+          >
+            <div className="patient-cancel-modal__icon patient-cancel-modal__icon--success">
+              ✓
+            </div>
+
+            <h2 id="cancel-success-title" className="patient-cancel-modal__title">
+              Appointment Cancelled Successfully!
+            </h2>
+
+            <p className="patient-cancel-modal__text">
+              Your appointment has been cancelled successfully.
+            </p>
+
+            <button
+              type="button"
+              className="patient-cancel-modal__button"
+              onClick={handleCloseSuccessPopup}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
