@@ -4,6 +4,8 @@ import Doctors from "./pages/Doctors";
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import PatientUserPage from "./pages/PatientUserPage";
+import Footer from "./components/Footer";
 import MediCareChat from "./src/components/MediCareChat";
 import "./App.css";
 
@@ -24,9 +26,14 @@ function App() {
       page = authUser ? "home" : "login";
     }
 
+    if (page === "patient-profile" && authUser?.role !== "patient") {
+      page = authUser ? "home" : "login";
+    }
+
     if (page !== activePage) {
       setPreviousPages((prev) => [...prev, activePage]);
     }
+
     setActivePage(page);
     setDoctorFilter(page === "doctors" ? options.department || "" : "");
   };
@@ -43,6 +50,7 @@ function App() {
 
   const handleLoginSuccess = (user) => {
     const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+
     setAuthUser(user);
     setWelcomeName(fullName || "User");
     setPreviousPages([]);
@@ -65,6 +73,8 @@ function App() {
     setActivePage("home");
   };
 
+  const isDashboardPage = activePage === "admin" || activePage === "doctor";
+
   return (
     <div className="app-shell">
       <Navbar
@@ -73,11 +83,26 @@ function App() {
         authUser={authUser}
         onLogout={requestLogout}
       />
-      <main className="app-main" style={activePage === "admin" || activePage === "doctor" ? { padding: 0, width: "100%", maxWidth: "100%" } : {}}>
+
+      <main
+        className="app-main"
+        style={
+          isDashboardPage
+            ? { padding: 0, width: "100%", maxWidth: "100%" }
+            : {}
+        }
+      >
         {activePage === "admin" && authUser?.role === "admin" ? (
           <AdminDashboard onLogout={requestLogout} onBack={handleBack} />
-        ) : activePage === "doctor" && (authUser?.role === "doctor" || authUser?.role === "admin") ? (
+        ) : activePage === "doctor" &&
+          (authUser?.role === "doctor" || authUser?.role === "admin") ? (
           <DoctorDashboard onLogout={requestLogout} onBack={handleBack} />
+        ) : activePage === "patient-profile" && authUser?.role === "patient" ? (
+          <PatientUserPage
+            authUser={authUser}
+            onBack={handleBack}
+            onNavigate={handleNavigate}
+          />
         ) : activePage === "home" ? (
           <Home
             onNavigate={handleNavigate}
@@ -96,17 +121,37 @@ function App() {
         )}
       </main>
 
+      {!isDashboardPage && <Footer onNavigate={handleNavigate} />}
+
       {showLogoutConfirm && (
         <div className="logout-dialog" role="presentation">
-          <div className="logout-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title">
+          <div
+            className="logout-dialog__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+          >
             <p className="logout-dialog__eyebrow">Account session</p>
             <h2 id="logout-dialog-title">Confirm logout?</h2>
-            <p className="logout-dialog__text">You will be returned to the home page and need to sign in again to access your portal.</p>
+            <p className="logout-dialog__text">
+              You will be returned to the home page and need to sign in again to
+              access your portal.
+            </p>
+
             <div className="logout-dialog__actions">
-              <button type="button" className="logout-dialog__cancel" onClick={cancelLogout}>
+              <button
+                type="button"
+                className="logout-dialog__cancel"
+                onClick={cancelLogout}
+              >
                 Stay logged in
               </button>
-              <button type="button" className="logout-dialog__confirm" onClick={handleLogout}>
+
+              <button
+                type="button"
+                className="logout-dialog__confirm"
+                onClick={handleLogout}
+              >
                 Logout
               </button>
             </div>

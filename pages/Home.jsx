@@ -52,19 +52,6 @@ const CalendarIcon = () => (
   </svg>
 );
 
-const PhoneIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="footer-icon">
-    <path d="M7.2 3.5c.5-.5 1.3-.6 1.9-.2l2.2 1.5c.7.5.9 1.4.5 2.1l-1 1.8a1 1 0 0 0 .1 1.1 15.5 15.5 0 0 0 3.3 3.3 1 1 0 0 0 1.1.1l1.8-1c.7-.4 1.6-.2 2.1.5l1.5 2.2c.4.6.3 1.4-.2 1.9l-1.4 1.4c-.8.8-2 1.1-3 .8-2.9-.9-5.6-2.7-8-5.1s-4.2-5.1-5.1-8c-.3-1 .1-2.2.8-3l1.4-1.4Z" fill="currentColor" />
-  </svg>
-);
-
-const GlobeIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="footer-icon">
-    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
-    <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" fill="none" stroke="currentColor" strokeWidth="1.6" />
-  </svg>
-);
-
 function Home({ onNavigate, authUser, welcomeName }) {
   const [activeAction, setActiveAction] = useState("");
 
@@ -129,7 +116,6 @@ function Home({ onNavigate, authUser, welcomeName }) {
             </div>
           </div>
 
-          {/* ✅ CLEANED HERO MEDIA (ONLY VIDEO LEFT) */}
           <div className="hero-media">
             <video
               className="hero-video"
@@ -182,19 +168,6 @@ function Home({ onNavigate, authUser, welcomeName }) {
           </article>
         ))}
       </section>
-
-      <footer className="footer-bar">
-        <div className="footer-inner">
-          <div className="footer-item">
-            <PhoneIcon />
-            <span>Contact Us: +977 9767353425 | 01-4234231</span>
-          </div>
-          <div className="footer-item">
-            <GlobeIcon />
-            <span>www.doctris.np.com</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
