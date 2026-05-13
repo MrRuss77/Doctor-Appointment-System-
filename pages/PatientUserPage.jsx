@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 function PatientUserPage({ authUser }) {
   const [showAppointments, setShowAppointments] = useState(false);
+  const [appointmentHistory, setAppointmentHistory] = useState([]);
 
   const fullName = `${authUser?.firstName || ""} ${authUser?.lastName || ""}`.trim();
 
@@ -13,7 +14,39 @@ function PatientUserPage({ authUser }) {
     gender: authUser?.gender || "Not provided"
   };
 
-  const appointmentHistory = [];
+  const handleCancelAppointment = async (appointmentId) => {
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel your appointment?"
+    );
+
+    if (!confirmCancel) {
+      return;
+    }
+
+    /*
+      Backend connection later:
+
+      try {
+        const response = await fetch(`/api/appointments/${appointmentId}/cancel`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to cancel appointment");
+        }
+
+        setAppointmentHistory((currentAppointments) =>
+          currentAppointments.filter((appointment) => appointment.id !== appointmentId)
+        );
+      } catch (error) {
+        console.error("Cancel appointment error:", error);
+        alert("Unable to cancel appointment. Please try again.");
+      }
+    */
+  };
 
   return (
     <section className="patient-user-page">
@@ -81,6 +114,7 @@ function PatientUserPage({ authUser }) {
                     <button
                       type="button"
                       className="patient-cancel-appointment-button"
+                      onClick={() => handleCancelAppointment(appointment.id)}
                     >
                       Cancel
                     </button>
@@ -90,9 +124,7 @@ function PatientUserPage({ authUser }) {
             ) : (
               <div className="patient-history-empty-box">
                 <h3>No appointments found</h3>
-                <p>
-                  You have not booked any appointments yet!!
-                </p>
+                <p>You have not booked any appointments yet!!</p>
               </div>
             )}
           </div>

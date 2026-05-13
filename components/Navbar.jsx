@@ -158,7 +158,7 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout }) => {
                 <UserIcon />
               </span>
 
-              <span>Profile</span>
+              <span>User Profile</span>
 
               <span
                 className={`profile-menu-button__chevron ${
