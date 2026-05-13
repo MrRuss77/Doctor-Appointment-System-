@@ -91,8 +91,7 @@ function PatientUserPage({ authUser }) {
               <div className="patient-history-empty-box">
                 <h3>No appointments found</h3>
                 <p>
-                  Appointment history will appear here after backend patient
-                  appointment fetching is connected.
+                  You have not booked any appointments yet!!
                 </p>
               </div>
             )}
