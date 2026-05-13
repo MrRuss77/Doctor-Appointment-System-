@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import Doctors from "./pages/Doctors";
 import Home from "./pages/Home";
@@ -13,9 +13,40 @@ function App() {
   const [activePage, setActivePage] = useState("home");
   const [previousPages, setPreviousPages] = useState([]);
   const [doctorFilter, setDoctorFilter] = useState("");
-  const [authUser, setAuthUser] = useState(null);
-  const [welcomeName, setWelcomeName] = useState("");
+  const [authUser, setAuthUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem("medicare_auth_user");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [welcomeName, setWelcomeName] = useState(() => {
+    try {
+      return localStorage.getItem("medicare_welcome_name") || "";
+    } catch {
+      return "";
+    }
+  });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  useEffect(() => {
+    if (authUser) {
+      localStorage.setItem("medicare_auth_user", JSON.stringify(authUser));
+      localStorage.setItem("user", JSON.stringify(authUser));
+    } else {
+      localStorage.removeItem("medicare_auth_user");
+      localStorage.removeItem("user");
+    }
+  }, [authUser]);
+
+  useEffect(() => {
+    if (welcomeName) {
+      localStorage.setItem("medicare_welcome_name", welcomeName);
+    } else {
+      localStorage.removeItem("medicare_welcome_name");
+    }
+  }, [welcomeName]);
 
   const handleNavigate = (page, options = {}) => {
     if (page === "admin" && authUser?.role !== "admin") {
@@ -94,10 +125,10 @@ function App() {
         }
       >
         {activePage === "admin" && authUser?.role === "admin" ? (
-          <AdminDashboard onLogout={requestLogout} onBack={handleBack} />
+          <AdminDashboard authUser={authUser} onLogout={requestLogout} onBack={handleBack} />
         ) : activePage === "doctor" &&
           (authUser?.role === "doctor" || authUser?.role === "admin") ? (
-          <DoctorDashboard onLogout={requestLogout} onBack={handleBack} />
+          <DoctorDashboard authUser={authUser} onLogout={requestLogout} />
         ) : activePage === "patient-profile" && authUser?.role === "patient" ? (
           <PatientUserPage
             authUser={authUser}
@@ -122,7 +153,7 @@ function App() {
         )}
       </main>
 
-      {!isDashboardPage && !isLoginPage && <Footer onNavigate={handleNavigate} />}
+      {!isLoginPage && <Footer onNavigate={handleNavigate} />}
 
       {showLogoutConfirm && (
         <div className="logout-dialog" role="presentation">

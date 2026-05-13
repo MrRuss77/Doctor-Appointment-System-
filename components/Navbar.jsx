@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const AmbulanceIcon = () => (
   <svg viewBox="0 0 64 64" aria-hidden="true" className="brand-icon">
@@ -22,7 +22,6 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout }) => {
   const isAdmin = authUser?.role === "admin";
   const isDoctor = authUser?.role === "doctor";
   const isPatient = authUser?.role === "patient";
-  const canOpenDoctorPanel = isDoctor || isAdmin;
 
   const navItems = [
     { id: "home", label: "Home" },
@@ -31,10 +30,22 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout }) => {
     ...(!authUser ? [{ id: "login", label: "Login" }] : [])
   ];
 
+  const emailName = authUser?.email ? authUser.email.split("@")[0] : "";
   const displayName =
     `${authUser?.firstName || ""} ${authUser?.lastName || ""}`.trim() ||
     authUser?.name ||
+    emailName ||
     "User";
+
+  useEffect(() => {
+    const closeMenus = () => {
+      setMenuOpen(false);
+      setProfileOpen(false);
+    };
+
+    window.addEventListener("resize", closeMenus);
+    return () => window.removeEventListener("resize", closeMenus);
+  }, []);
 
   const handleNavigate = (page) => {
     onNavigate?.(page);
@@ -92,60 +103,7 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout }) => {
           </button>
         ))}
 
-        {canOpenDoctorPanel && (
-          <div className="nav-panel-actions">
-            <button
-              type="button"
-              className="nav-cta nav-cta--doctor"
-              onClick={() => handleNavigate("doctor")}
-            >
-              Doctor Panel
-            </button>
-
-            {isAdmin && (
-              <button
-                type="button"
-                className="nav-cta nav-cta--admin"
-                onClick={() => handleNavigate("admin")}
-              >
-                Admin Panel
-              </button>
-            )}
-          </div>
-        )}
-
-        {authUser && isAdmin && (
-          <div className="nav-utility">
-            <button
-              type="button"
-              className="admin-profile-button"
-              onClick={handleLogoutClick}
-            >
-              <span className="admin-profile-button__avatar">
-                <UserIcon />
-              </span>
-
-              <span className="admin-profile-button__copy">
-                <strong>{displayName}</strong>
-                <small>Admin</small>
-              </span>
-            </button>
-          </div>
-        )}
-
-        {authUser && isDoctor && !isAdmin && (
-          <div className="nav-utility">
-            <button
-              type="button"
-              className="nav-user-pill"
-              onClick={handleLogoutClick}
-            >
-              Doctor portal
-            </button>
-          </div>
-        )}
-
-        {authUser && isPatient && (
+        {authUser ? (
           <div className="nav-utility nav-profile-wrap">
             <button
               type="button"
@@ -157,35 +115,46 @@ const Navbar = ({ activePage, onNavigate, authUser, onLogout }) => {
               <span className="profile-menu-button__avatar">
                 <UserIcon />
               </span>
-
-              <span>User Profile</span>
-
-              <span
-                className={`profile-menu-button__chevron ${
-                  profileOpen ? "open" : ""
-                }`}
-              >
-                ▾
-              </span>
+              <span>{displayName}</span>
+              <span className={`profile-menu-button__chevron ${profileOpen ? "open" : ""}`}>▾</span>
             </button>
 
-            {profileOpen && (
+            {profileOpen ? (
               <div className="profile-dropdown" role="menu">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => handleNavigate("patient-profile")}
-                >
-                  My Profile
-                </button>
-
+                {isPatient ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleNavigate("patient-profile")}
+                  >
+                    My Profile
+                  </button>
+                ) : null}
+                {isDoctor ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleNavigate("doctor")}
+                  >
+                    Doctor Panel
+                  </button>
+                ) : null}
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleNavigate("admin")}
+                  >
+                    Admin Panel
+                  </button>
+                ) : null}
                 <button type="button" role="menuitem" onClick={handleLogoutClick}>
                   Logout
                 </button>
               </div>
-            )}
+            ) : null}
           </div>
-        )}
+        ) : null}
       </div>
     </nav>
   );

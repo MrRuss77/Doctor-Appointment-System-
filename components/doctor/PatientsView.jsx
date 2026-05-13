@@ -1,15 +1,146 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { PatientDetailsModal } from "./DoctorModals";
+import { fetchAppointments } from "../../src/api/client";
 
-const PatientsView = () => {
+const normalizeName = (value = "") =>
+  String(value)
+    .replace(/^dr\.?\s*/i, "")
+    .trim()
+    .toLowerCase();
+
+const fallbackPatientHistory = [
+  {
+    date: "2026-04-25",
+    visitLabel: "Visit #2",
+    diagnosis: "Hypertension",
+    remarks: "Patient complained of occasional chest discomfort. ECG performed, results normal.",
+    prescription: "Amlodipine 5mg - Once daily, Aspirin 75mg - Once daily"
+  },
+  {
+    date: "2026-03-25",
+    visitLabel: "Visit #1",
+    diagnosis: "Hypertension",
+    remarks: "Initial diagnosis.",
+    prescription: "Lifestyle changes advised with blood pressure monitoring."
+  }
+];
+
+const PatientsView = ({ authUser }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const patients = [
-    { id: 1, name: "Subashna Maskey", age: "20 years", gender: "Female", bloodGroup: "A+", phone: "1234567890", email: "sub@gmail.com" },
-    { id: 2, name: "Rean Shrestha", age: "25 years", gender: "Male", bloodGroup: "O+", phone: "1234567891", email: "rean@gmail.com" },
-    { id: 3, name: "Mirajan Shrestha", age: "30 years", gender: "Male", bloodGroup: "B+", phone: "1234567892", email: "mirajan@gmail.com" },
-    { id: 4, name: "Deepsikha Gautam", age: "22 years", gender: "Female", bloodGroup: "AB+", phone: "1234567893", email: "deepsikha@gmail.com" },
-    { id: 5, name: "Anshu Basnet", age: "28 years", gender: "Female", bloodGroup: "O-", phone: "1234567894", email: "anshu@gmail.com" },
-  ];
+  const [appointments, setAppointments] = useState([]);
+  const [openMenuId, setOpenMenuId] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    fetchAppointments()
+      .then((data) => {
+        if (active) {
+          setAppointments(data || []);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setAppointments([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleWindowClick = () => {
+      setOpenMenuId("");
+    };
+
+    window.addEventListener("click", handleWindowClick);
+
+    return () => {
+      window.removeEventListener("click", handleWindowClick);
+    };
+  }, []);
+
+  const copyPatientDetail = async (value) => {
+    if (!value || value === "Not provided") {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (_error) {
+      window.prompt("Copy this value", value);
+    }
+  };
+
+  const patients = useMemo(() => {
+    const authEmail = String(authUser?.email || "").trim().toLowerCase();
+    const authFullName = normalizeName(
+      [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ") || authUser?.name || ""
+    );
+
+    const relevantAppointments = appointments.filter((appointment) => {
+      const doctorEmail = String(appointment.doctor?.email || "").trim().toLowerCase();
+      const doctorName = normalizeName(appointment.doctor?.fullName || "");
+
+      if (authEmail && doctorEmail && authEmail === doctorEmail) {
+        return true;
+      }
+
+      if (authFullName && doctorName && authFullName === doctorName) {
+        return true;
+      }
+
+      return false;
+    });
+
+    const patientMap = new Map();
+
+    relevantAppointments.forEach((appointment) => {
+      const noteParts = String(appointment.notes || "")
+        .split("|")
+        .map((part) => part.trim());
+      const getValue = (label) =>
+        noteParts.find((part) => part.toLowerCase().startsWith(`${label.toLowerCase()}:`))
+          ?.split(":")
+          .slice(1)
+          .join(":")
+          .trim() || "";
+
+      const patient = appointment.patient || {};
+      const id = patient._id || patient.email || appointment._id;
+
+      if (!patientMap.has(id)) {
+        patientMap.set(id, {
+          id,
+          name: `${patient.firstName || ""} ${patient.lastName || ""}`.trim() || "Patient",
+          age: getValue("Age") || "Not provided",
+          gender: getValue("Gender") || patient.gender || "Not provided",
+          bloodGroup: getValue("Blood Group") || "Not provided",
+          phone: getValue("Phone") || patient.phone || "Not provided",
+          email: patient.email || "Not provided",
+          history: []
+        });
+      }
+
+      const patientRecord = patientMap.get(id);
+      patientRecord.history.push({
+        date: appointment.appointmentDate
+          ? new Date(appointment.appointmentDate).toISOString().slice(0, 10)
+          : "Not scheduled",
+        visitLabel: `Visit #${patientRecord.history.length + 1}`,
+        diagnosis: appointment.reason || "General consultation",
+        remarks: appointment.notes || "No remarks provided.",
+        prescription: appointment.prescription || appointment.treatment || "Prescription not added yet."
+      });
+    });
+
+    return Array.from(patientMap.values()).map((patient) => ({
+      ...patient,
+      history: patient.history.length > 0 ? patient.history.reverse() : fallbackPatientHistory
+    }));
+  }, [appointments, authUser]);
 
   return (
     <div className="patients-view">
@@ -17,6 +148,13 @@ const PatientsView = () => {
       
       <div className="patients-table-container">
         <table className="patients-table">
+          <colgroup>
+            <col className="patients-col-patient" />
+            <col className="patients-col-age" />
+            <col className="patients-col-gender" />
+            <col className="patients-col-blood" />
+            <col className="patients-col-actions" />
+          </colgroup>
           <thead>
             <tr>
               <th>Patient</th>
@@ -27,17 +165,76 @@ const PatientsView = () => {
             </tr>
           </thead>
           <tbody>
-            {patients.map((pt) => (
-              <tr key={pt.id}>
-                <td>{pt.name}</td>
-                <td>{pt.age}</td>
-                <td>{pt.gender}</td>
-                <td>{pt.bloodGroup}</td>
-                <td className="actions">
-                  <button className="btn-view" onClick={() => setSelectedPatient(pt)}>View</button>
-                </td>
+            {patients.length > 0 ? (
+              patients.map((pt) => (
+                <tr key={pt.id}>
+                  <td>{pt.name}</td>
+                  <td>{pt.age}</td>
+                  <td>{pt.gender}</td>
+                  <td>{pt.bloodGroup}</td>
+                  <td className="actions">
+                    <div className="patient-actions-menu">
+                      <button
+                        type="button"
+                        className="patient-actions-menu__trigger"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuId === pt.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setOpenMenuId((current) => (current === pt.id ? "" : pt.id));
+                        }}
+                      >
+                        Actions
+                        <span className="patient-actions-menu__chevron" aria-hidden="true">▾</span>
+                      </button>
+
+                      {openMenuId === pt.id ? (
+                        <div
+                          className="patient-actions-menu__dropdown"
+                          role="menu"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="patient-actions-menu__item"
+                            onClick={() => {
+                              setSelectedPatient(pt);
+                              setOpenMenuId("");
+                            }}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            type="button"
+                            className="patient-actions-menu__item"
+                            onClick={async () => {
+                              await copyPatientDetail(pt.phone);
+                              setOpenMenuId("");
+                            }}
+                          >
+                            Copy Phone
+                          </button>
+                          <button
+                            type="button"
+                            className="patient-actions-menu__item"
+                            onClick={async () => {
+                              await copyPatientDetail(pt.email);
+                              setOpenMenuId("");
+                            }}
+                          >
+                            Copy Email
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="doctor-empty-cell">No patients available for this doctor yet.</td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -133,7 +133,7 @@ function Home({ onNavigate, authUser, welcomeName }) {
         <div className="section-heading">
           <div>
             <p className="section-kicker">Quick access</p>
-            <h2>Everything important stays one tap away.</h2>
+            <h2>Everything important stays one tap away</h2>
           </div>
         </div>
 

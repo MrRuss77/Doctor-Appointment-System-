@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import anesthesiologyImg from "../departments/Anesthiology.png";
 import dentistImg from "../departments/dentist.png.png";
@@ -8,6 +8,8 @@ import cardiologyImg from "../departments/Cardiology.png";
 import neurologyImg from "../departments/Neurology.png";
 
 const DepartmentsView = () => {
+  const [feedback, setFeedback] = useState("");
+  const [openMenuId, setOpenMenuId] = useState("");
   const departments = [
     { 
       id: 1, name: "Anesthiology", desc: "Pain Management, Anesthesia", doctors: 5, 
@@ -35,6 +37,18 @@ const DepartmentsView = () => {
     }
   ];
 
+  useEffect(() => {
+    const handleWindowClick = () => {
+      setOpenMenuId("");
+    };
+
+    window.addEventListener("click", handleWindowClick);
+
+    return () => {
+      window.removeEventListener("click", handleWindowClick);
+    };
+  }, []);
+
   return (
     <div className="departments-view">
       <div className="admin-header-row">
@@ -45,17 +59,35 @@ const DepartmentsView = () => {
         </button>
       </div>
 
+      {feedback ? <p className="admin-feedback">{feedback}</p> : null}
+
       <div className="departments-grid">
         {departments.map((dept) => (
           <div key={dept.id} className="dept-card">
             <div className="dept-card-header">
               <div className="dept-icon" style={{ backgroundColor: "transparent", padding: 0 }}>{dept.icon}</div>
-              <div className="dept-actions">
-                <button className="action-btn edit" title="Edit">
-                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              <div className="dept-actions dept-actions--inline">
+                <button
+                  type="button"
+                  className="dept-action-btn dept-action-btn--edit"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFeedback(`Edit Department clicked for ${dept.name}`);
+                  }}
+                  title="Edit"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
-                <button className="action-btn delete" title="Delete">
-                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <button
+                  type="button"
+                  className="dept-action-btn dept-action-btn--delete"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFeedback(`Delete Department clicked for ${dept.name}`);
+                  }}
+                  title="Delete"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </button>
               </div>
             </div>

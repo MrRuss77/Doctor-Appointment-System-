@@ -66,11 +66,40 @@ export const fetchDoctors = async (query = "") => {
 export const fetchDepartments = async () => request("/departments");
 export const fetchAppointments = async () => request("/appointments");
 export const fetchUsers = async () => request("/users");
+export const fetchAppointment = async (appointmentId) => request(`/appointments/${appointmentId}`);
 
 export const createUser = async (body) =>
   request("/users", {
     method: "POST",
     body: JSON.stringify(body)
+  });
+
+export const updateUser = async (userId, body) =>
+  request(`/users/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+
+export const deleteUser = async (userId) =>
+  request(`/users/${userId}`, {
+    method: "DELETE"
+  });
+
+export const createDoctor = async (body) =>
+  request("/doctors", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+
+export const updateDoctor = async (doctorId, body) =>
+  request(`/doctors/${doctorId}`, {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+
+export const deleteDoctor = async (doctorId) =>
+  request(`/doctors/${doctorId}`, {
+    method: "DELETE"
   });
 
 export const createAppointment = async (body) =>
@@ -83,6 +112,17 @@ export const updateAppointment = async (appointmentId, body) =>
   request(`/appointments/${appointmentId}`, {
     method: "PUT",
     body: JSON.stringify(body)
+  });
+
+export const respondToAppointment = async (appointmentId, body) =>
+  request(`/appointments/${appointmentId}/respond`, {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+
+export const deleteAppointment = async (appointmentId) =>
+  request(`/appointments/${appointmentId}`, {
+    method: "DELETE"
   });
 
 export const loginUser = async (body) =>

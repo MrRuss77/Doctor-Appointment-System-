@@ -1,10 +1,30 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { fetchAppointments, updateAppointment } from "../src/api/client";
+
+const formatAppointmentDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "No date";
+  }
+
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+};
 
 function PatientUserPage({ authUser }) {
   const [showAppointments, setShowAppointments] = useState(false);
   const [appointmentHistory, setAppointmentHistory] = useState([]);
+  const [historyFilter, setHistoryFilter] = useState("all");
+  const [historyFeedback, setHistoryFeedback] = useState("");
+  const [busyId, setBusyId] = useState("");
 
   const fullName = `${authUser?.firstName || ""} ${authUser?.lastName || ""}`.trim();
+  const patientEmail = String(authUser?.email || "").trim().toLowerCase();
 
   const patientInfo = {
     name: fullName || authUser?.name || "Patient User",
@@ -14,39 +34,142 @@ function PatientUserPage({ authUser }) {
     gender: authUser?.gender || "Not provided"
   };
 
-  const handleCancelAppointment = async (appointmentId) => {
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel your appointment?"
-    );
+  const fallbackHistory = useMemo(
+    () => [
+      {
+        _id: "demo-history-1",
+        doctor: { fullName: "Doctor assignment pending" },
+        appointmentDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+        patient: { email: authUser?.email || "" }
+      }
+    ],
+    [authUser?.email]
+  );
 
-    if (!confirmCancel) {
+  useEffect(() => {
+    let active = true;
+
+    const loadHistory = async () => {
+      try {
+        const appointments = await fetchAppointments();
+
+        if (!active) {
+          return;
+        }
+
+        const matchedAppointments = appointments.filter((appointment) => {
+          const appointmentEmail = String(appointment.patient?.email || "").trim().toLowerCase();
+          const appointmentPatientId = String(appointment.patient?._id || appointment.patient || "");
+          const authPatientId = String(authUser?._id || authUser?.id || "");
+
+          if (patientEmail && appointmentEmail && patientEmail === appointmentEmail) {
+            return true;
+          }
+
+          if (authPatientId && appointmentPatientId && authPatientId === appointmentPatientId) {
+            return true;
+          }
+
+          return false;
+        });
+
+        setAppointmentHistory(matchedAppointments.length > 0 ? matchedAppointments : fallbackHistory);
+        setHistoryFeedback("");
+      } catch (error) {
+        if (active) {
+          setHistoryFeedback(error.message);
+          setAppointmentHistory(fallbackHistory);
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      active = false;
+    };
+  }, [authUser, patientEmail, fallbackHistory]);
+
+  const filteredHistory = useMemo(() => {
+    if (historyFilter === "all") {
+      return appointmentHistory;
+    }
+
+    return appointmentHistory.filter(
+      (appointment) => String(appointment.status || "").toLowerCase() === historyFilter
+    );
+  }, [appointmentHistory, historyFilter]);
+
+  const handleStatusChange = async (appointmentId, nextStatus) => {
+    const appointment = appointmentHistory.find((item) => item._id === appointmentId);
+    if (!appointment) {
       return;
     }
 
-    /*
-      Backend connection later:
+    if (String(appointment.status || "").toLowerCase() === nextStatus) {
+      return;
+    }
 
-      try {
-        const response = await fetch(`/api/appointments/${appointmentId}/cancel`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
+    if (nextStatus === "cancelled") {
+      const confirmCancel = window.confirm(
+        "Are you sure you want to cancel your appointment?"
+      );
 
-        if (!response.ok) {
-          throw new Error("Failed to cancel appointment");
-        }
-
-        setAppointmentHistory((currentAppointments) =>
-          currentAppointments.filter((appointment) => appointment.id !== appointmentId)
-        );
-      } catch (error) {
-        console.error("Cancel appointment error:", error);
-        alert("Unable to cancel appointment. Please try again.");
+      if (!confirmCancel) {
+        return;
       }
-    */
+    }
+
+    if (String(appointmentId).startsWith("demo-history-")) {
+      setAppointmentHistory((currentAppointments) =>
+        currentAppointments.map((item) =>
+          item._id === appointmentId ? { ...item, status: nextStatus } : item
+        )
+      );
+      setHistoryFeedback(
+        nextStatus === "cancelled"
+          ? "Appointment cancelled successfully."
+          : `Appointment marked as ${nextStatus}.`
+      );
+      return;
+    }
+
+    setBusyId(appointmentId);
+
+    try {
+      await updateAppointment(appointmentId, {
+        patient: appointment.patient?._id || appointment.patient,
+        doctor: appointment.doctor?._id || appointment.doctor,
+        department: appointment.department?._id || appointment.department,
+        appointmentDate: appointment.appointmentDate,
+        reason: appointment.reason,
+        notes: appointment.notes,
+        status: nextStatus
+      });
+
+      setAppointmentHistory((currentAppointments) =>
+        currentAppointments.map((item) =>
+          item._id === appointmentId ? { ...item, status: nextStatus } : item
+        )
+      );
+      setHistoryFeedback(
+        nextStatus === "cancelled"
+          ? "Appointment cancelled successfully."
+          : `Appointment updated to ${nextStatus}.`
+      );
+    } catch (error) {
+      setHistoryFeedback(error.message);
+    } finally {
+      setBusyId("");
+    }
   };
+
+  const handleCancelAppointment = async (appointmentId) => {
+    handleStatusChange(appointmentId, "cancelled");
+  };
+
+  const getStatusTone = (status) => String(status || "pending").toLowerCase();
 
   return (
     <section className="patient-user-page">
@@ -102,22 +225,54 @@ function PatientUserPage({ authUser }) {
 
         {showAppointments && (
           <div className="patient-history-result">
-            {appointmentHistory.length > 0 ? (
+            {historyFeedback ? <p className="patient-history-feedback">{historyFeedback}</p> : null}
+
+            <div className="patient-history-toolbar">
+              <label className="patient-history-filter">
+                <span>Status</span>
+                <select value={historyFilter} onChange={(event) => setHistoryFilter(event.target.value)}>
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </label>
+            </div>
+
+            {filteredHistory.length > 0 ? (
               <div className="patient-history-list">
-                {appointmentHistory.map((appointment) => (
-                  <div key={appointment.id} className="patient-history-row">
+                {filteredHistory.map((appointment) => (
+                  <div key={appointment._id} className="patient-history-row">
                     <div>
-                      <strong>{appointment.doctor}</strong>
-                      <span>{appointment.date}</span>
+                      <strong>{appointment.doctor?.fullName || "Doctor not assigned"}</strong>
+                      <span>{formatAppointmentDate(appointment.appointmentDate)}</span>
                     </div>
 
-                    <button
-                      type="button"
-                      className="patient-cancel-appointment-button"
-                      onClick={() => handleCancelAppointment(appointment.id)}
+                    <div
+                      className={`patient-history-status patient-history-status--${getStatusTone(
+                        appointment.status
+                      )}`}
                     >
-                      Cancel
-                    </button>
+                      <select
+                        value={String(appointment.status || "pending").toLowerCase()}
+                        onChange={(event) => handleStatusChange(appointment._id, event.target.value)}
+                        disabled={busyId === appointment._id}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+
+                    <div
+                      className={`patient-history-status-note patient-history-status-note--${getStatusTone(
+                        appointment.status
+                      )}`}
+                    >
+                      {busyId === appointment._id
+                        ? "Updating..."
+                        : `Status: ${String(appointment.status || "pending")}`}
+                    </div>
                   </div>
                 ))}
               </div>
