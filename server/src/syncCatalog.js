@@ -14,19 +14,22 @@ const upsertUserAccount = async ({ email, password, ...profile }) => {
   const existingUser = await User.findOne({ email });
 
   if (!existingUser) {
-    await User.create({
+    return User.create({
       email,
       password,
       ...profile
     });
-    return;
   }
 
   existingUser.firstName = profile.firstName;
   existingUser.lastName = profile.lastName;
   existingUser.phone = profile.phone;
   existingUser.role = profile.role;
+  if (password) {
+    existingUser.password = password;
+  }
   await existingUser.save();
+  return existingUser;
 };
 
 dotenv.config();
@@ -57,23 +60,7 @@ const syncCatalog = async () => {
       departmentMap[department.name] = savedDepartment._id;
     }
 
-    for (const { departmentName, ...doctor } of doctorCatalog) {
-      await Doctor.findOneAndUpdate(
-        { fullName: doctor.fullName },
-        {
-          $set: {
-            ...doctor,
-            department: departmentMap[departmentName],
-            isActive: true
-          }
-        },
-        {
-          new: true,
-          upsert: true,
-          setDefaultsOnInsert: true
-        }
-      );
-    }
+    const doctorUserMap = new Map();
 
     for (const user of platformUserCatalog) {
       await upsertUserAccount(user);
@@ -84,7 +71,7 @@ const syncCatalog = async () => {
       const firstName = parts[0] || "Doctor";
       const lastName = parts.slice(1).join(" ") || "User";
 
-      await upsertUserAccount({
+      const user = await upsertUserAccount({
         firstName,
         lastName,
         email: doctor.email,
@@ -92,6 +79,27 @@ const syncCatalog = async () => {
         password: doctorDefaultPassword,
         role: "doctor"
       });
+
+      doctorUserMap.set(doctor.email, user._id);
+    }
+
+    for (const { departmentName, ...doctor } of doctorCatalog) {
+      await Doctor.findOneAndUpdate(
+        { fullName: doctor.fullName },
+        {
+          $set: {
+            ...doctor,
+            user: doctorUserMap.get(doctor.email),
+            department: departmentMap[departmentName],
+            isActive: true
+          }
+        },
+        {
+          new: true,
+          upsert: true,
+          setDefaultsOnInsert: true
+        }
+      );
     }
 
     console.log(

@@ -3,6 +3,7 @@ const errorHandler = (error, _req, res, _next) => {
 
   if (error.name === "ValidationError") {
     return res.status(400).json({
+      success: false,
       message: "Validation failed.",
       errors: Object.values(error.errors).map((item) => item.message)
     });
@@ -10,23 +11,25 @@ const errorHandler = (error, _req, res, _next) => {
 
   if (error.code === 11000) {
     return res.status(400).json({
+      success: false,
       message: "A unique field already exists.",
       field: Object.keys(error.keyPattern || {})
     });
   }
 
   if (error.name === "CastError") {
-    return res.status(400).json({ message: "Invalid record id." });
+    return res.status(400).json({ success: false, message: "Invalid record id." });
   }
 
   if (error.statusCode) {
     return res.status(error.statusCode).json({
+      success: false,
       message: error.message,
       ...(error.errors ? { errors: error.errors } : {})
     });
   }
 
-  return res.status(500).json({ message: "Internal server error." });
+  return res.status(500).json({ success: false, message: "Internal server error." });
 };
 
 export default errorHandler;

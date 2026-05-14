@@ -20,6 +20,31 @@ const getErrorMessage = (payload) => {
   return "Request failed.";
 };
 
+const unwrapPayload = (payload) => {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    payload.success === true &&
+    Object.prototype.hasOwnProperty.call(payload, "data")
+  ) {
+    if (payload.data && typeof payload.data === "object" && !Array.isArray(payload.data)) {
+      return {
+        ...payload.data,
+        message: payload.message,
+        success: payload.success
+      };
+    }
+
+    return {
+      data: payload.data,
+      message: payload.message,
+      success: payload.success
+    };
+  }
+
+  return payload;
+};
+
 const request = async (path, options = {}) => {
   let response;
 
@@ -52,7 +77,7 @@ const request = async (path, options = {}) => {
     throw new Error(getErrorMessage(payload));
   }
 
-  return payload;
+  return unwrapPayload(payload);
 };
 
 export const fetchDoctors = async (query = "") => {
@@ -67,6 +92,7 @@ export const fetchDepartments = async () => request("/departments");
 export const fetchAppointments = async () => request("/appointments");
 export const fetchUsers = async () => request("/users");
 export const fetchAppointment = async (appointmentId) => request(`/appointments/${appointmentId}`);
+export const fetchDoctorAvailability = async (doctorId) => request(`/doctors/${doctorId}/availability`);
 
 export const createUser = async (body) =>
   request("/users", {
@@ -99,6 +125,46 @@ export const updateDoctor = async (doctorId, body) =>
 
 export const deleteDoctor = async (doctorId) =>
   request(`/doctors/${doctorId}`, {
+    method: "DELETE"
+  });
+
+export const addDoctorAvailability = async (doctorId, body) =>
+  request(`/doctors/${doctorId}/availability`, {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+
+export const replaceDoctorAvailability = async (doctorId, body) =>
+  request(`/doctors/${doctorId}/availability`, {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+
+export const updateDoctorAvailabilitySlot = async (doctorId, slotId, body) =>
+  request(`/doctors/${doctorId}/availability/${slotId}`, {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+
+export const deleteDoctorAvailabilitySlot = async (doctorId, slotId) =>
+  request(`/doctors/${doctorId}/availability/${slotId}`, {
+    method: "DELETE"
+  });
+
+export const createDepartment = async (body) =>
+  request("/departments", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+
+export const updateDepartment = async (departmentId, body) =>
+  request(`/departments/${departmentId}`, {
+    method: "PUT",
+    body: JSON.stringify(body)
+  });
+
+export const deleteDepartment = async (departmentId) =>
+  request(`/departments/${departmentId}`, {
     method: "DELETE"
   });
 

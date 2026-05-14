@@ -1,6 +1,7 @@
 import express from "express";
 import OTP from "../models/OTP.js";
 import User from "../models/User.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 import { sendOTPEmail } from "../utils/mailer.js";
 import { generateOTP, hashOTP } from "../utils/otp.js";
 import { isValidEmail, isValidPhone } from "../utils/validators.js";
@@ -36,26 +37,33 @@ router.post("/login", async (req, res, next) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+      return res.status(400).json({ success: false, message: "Email and password are required." });
     }
 
     if (!isValidEmail(normalizeEmail(email))) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide a valid email address." });
     }
 
     if (String(password).trim().length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters long." });
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long."
+      });
     }
 
     const user = await User.findOne({ email: normalizeEmail(email) });
 
     if (!user || user.password !== password) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res.status(401).json({ success: false, message: "Invalid email or password." });
     }
 
-    return res.json({
+    return sendSuccess(res, {
       message: "Login successful.",
-      user: sanitizeUser(user)
+      data: {
+        user: sanitizeUser(user)
+      }
     });
   } catch (error) {
     return next(error);
@@ -67,27 +75,32 @@ router.post("/reset-password", async (req, res, next) => {
     const { email, password, confirmPassword } = req.body;
 
     if (!email || !password || !confirmPassword) {
-      return res.status(400).json({ message: "All reset fields are required." });
+      return res.status(400).json({ success: false, message: "All reset fields are required." });
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ message: "Passwords do not match." });
+      return res.status(400).json({ success: false, message: "Passwords do not match." });
     }
 
     const normalizedEmail = normalizeEmail(email);
 
     if (!isValidEmail(normalizedEmail)) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide a valid email address." });
     }
 
     if (String(password).trim().length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters long." });
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long."
+      });
     }
 
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(404).json({ message: "No user found with that email." });
+      return res.status(404).json({ success: false, message: "No user found with that email." });
     }
 
     const verifiedOtp = await OTP.findOne({
@@ -96,7 +109,10 @@ router.post("/reset-password", async (req, res, next) => {
     }).sort({ updatedAt: -1 });
 
     if (!verifiedOtp) {
-      return res.status(400).json({ message: "No verified OTP found for this email. Please verify OTP first." });
+      return res.status(400).json({
+        success: false,
+        message: "No verified OTP found for this email. Please verify OTP first."
+      });
     }
 
     user.password = password;
@@ -106,7 +122,7 @@ router.post("/reset-password", async (req, res, next) => {
 
     await OTP.deleteOne({ _id: verifiedOtp._id });
 
-    return res.json({
+    return sendSuccess(res, {
       message: "Password reset successfully. You can now login."
     });
   } catch (error) {
@@ -119,13 +135,15 @@ router.post("/send-otp", async (req, res, next) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ message: "Email is required." });
+      return res.status(400).json({ success: false, message: "Email is required." });
     }
 
     const normalizedEmail = normalizeEmail(email);
 
     if (!isValidEmail(normalizedEmail)) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide a valid email address." });
     }
 
     try {
@@ -133,11 +151,12 @@ router.post("/send-otp", async (req, res, next) => {
     } catch (emailError) {
       console.error("Email sending failed:", emailError);
       return res.status(500).json({ 
+        success: false,
         message: "Failed to send OTP email. This might be due to email provider rate limits or configuration. Please try again later." 
       });
     }
 
-    return res.json({
+    return sendSuccess(res, {
       message: "OTP sent successfully. Please check your email."
     });
   } catch (error) {
@@ -150,15 +169,17 @@ router.post("/verify-otp", async (req, res, next) => {
     const { email, otp } = req.body;
 
     if (!email || !otp) {
-      return res.status(400).json({ message: "Email and OTP are required." });
+      return res.status(400).json({ success: false, message: "Email and OTP are required." });
     }
 
     if (!isValidEmail(normalizeEmail(email))) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Please provide a valid email address." });
     }
 
     if (!/^\d{6}$/.test(String(otp).trim())) {
-      return res.status(400).json({ message: "OTP must be a 6-digit code." });
+      return res.status(400).json({ success: false, message: "OTP must be a 6-digit code." });
     }
 
     const normalizedEmail = normalizeEmail(email);
@@ -168,16 +189,20 @@ router.post("/verify-otp", async (req, res, next) => {
     }).sort({ createdAt: -1 });
 
     if (!otpRecord) {
-      return res.status(404).json({ message: "No active OTP request found for that email." });
+      return res
+        .status(404)
+        .json({ success: false, message: "No active OTP request found for that email." });
     }
 
     if (!otpRecord.expiresAt || otpRecord.expiresAt.getTime() < Date.now()) {
       await OTP.deleteOne({ _id: otpRecord._id });
-      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({ success: false, message: "OTP has expired. Please request a new one." });
     }
 
     if (otpRecord.otpHash !== hashOTP(String(otp).trim())) {
-      return res.status(400).json({ message: "Invalid OTP code." });
+      return res.status(400).json({ success: false, message: "Invalid OTP code." });
     }
 
     otpRecord.used = true;
@@ -185,9 +210,11 @@ router.post("/verify-otp", async (req, res, next) => {
 
     const user = await User.findOne({ email: normalizedEmail });
 
-    return res.json({
+    return sendSuccess(res, {
       message: "OTP verified successfully.",
-      user: user ? sanitizeUser(user) : null
+      data: {
+        user: user ? sanitizeUser(user) : null
+      }
     });
   } catch (error) {
     return next(error);

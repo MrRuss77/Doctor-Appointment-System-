@@ -3,6 +3,7 @@ import Appointment from "../models/Appointment.js";
 import Department from "../models/Department.js";
 import Doctor from "../models/Doctor.js";
 import User from "../models/User.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 import {
   formatDateKey,
   formatTimeLabel,
@@ -120,6 +121,22 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
+    if (!req.body.patient) {
+      throw new HttpError(400, "Patient is required.");
+    }
+
+    if (!req.body.doctor) {
+      throw new HttpError(400, "Doctor is required.");
+    }
+
+    if (!req.body.department) {
+      throw new HttpError(400, "Department is required.");
+    }
+
+    if (!String(req.body.reason || "").trim()) {
+      throw new HttpError(400, "Appointment reason is required.");
+    }
+
     const appointmentDate = new Date(req.body.appointmentDate);
 
     if (Number.isNaN(appointmentDate.getTime())) {
@@ -141,9 +158,10 @@ router.post(
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
 
-    res.status(201).json({
-      ...(populatedAppointment.toObject?.() || populatedAppointment),
-      message: "Appointment request submitted successfully."
+    sendSuccess(res, {
+      status: 201,
+      message: "Appointment request submitted successfully.",
+      data: populatedAppointment.toObject?.() || populatedAppointment
     });
   })
 );
@@ -182,9 +200,9 @@ router.put(
       completed: "Appointment marked as completed successfully."
     };
 
-    res.json({
-      ...(populatedAppointment.toObject?.() || populatedAppointment),
-      message: statusMessageMap[appointment.status]
+    sendSuccess(res, {
+      message: statusMessageMap[appointment.status],
+      data: populatedAppointment.toObject?.() || populatedAppointment
     });
   })
 );
@@ -196,6 +214,10 @@ router.put(
 
     if (!appointment) {
       throw new HttpError(404, "Appointment not found.");
+    }
+
+    if (!String(req.body.reason ?? appointment.reason ?? "").trim()) {
+      throw new HttpError(400, "Appointment reason is required.");
     }
 
     const nextPatient = req.body.patient || appointment.patient;
@@ -239,9 +261,15 @@ router.put(
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
 
-    res.json({
-      ...(populatedAppointment.toObject?.() || populatedAppointment),
-      message: "Appointment updated successfully."
+    const normalizedStatus = String(appointment.status || "").toLowerCase();
+    const message =
+      normalizedStatus === "cancelled"
+        ? "Appointment cancelled successfully."
+        : "Appointment updated successfully.";
+
+    sendSuccess(res, {
+      message,
+      data: populatedAppointment.toObject?.() || populatedAppointment
     });
   })
 );
@@ -255,7 +283,7 @@ router.delete(
       throw new HttpError(404, "Appointment not found.");
     }
 
-    res.json({ message: "Appointment deleted successfully." });
+    sendSuccess(res, { message: "Appointment deleted successfully." });
   })
 );
 

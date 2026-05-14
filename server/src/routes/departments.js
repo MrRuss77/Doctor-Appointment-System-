@@ -2,6 +2,7 @@ import express from "express";
 import Appointment from "../models/Appointment.js";
 import Department from "../models/Department.js";
 import Doctor from "../models/Doctor.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import HttpError from "../utils/httpError.js";
 
@@ -51,9 +52,10 @@ router.post(
   "/",
   asyncHandler(async (req, res) => {
     const department = await Department.create(req.body);
-    res.status(201).json({
-      ...(department.toObject?.() || department),
-      message: "Department created successfully."
+    sendSuccess(res, {
+      status: 201,
+      message: "Department created successfully.",
+      data: department.toObject?.() || department
     });
   })
 );
@@ -70,9 +72,9 @@ router.put(
       throw new HttpError(404, "Department not found.");
     }
 
-    res.json({
-      ...(department.toObject?.() || department),
-      message: "Department updated successfully."
+    sendSuccess(res, {
+      message: "Department updated successfully.",
+      data: department.toObject?.() || department
     });
   })
 );
@@ -102,7 +104,7 @@ router.delete(
     }
 
     await Department.deleteOne({ _id: department._id });
-    res.json({ message: "Department deleted successfully." });
+    sendSuccess(res, { message: "Department deleted successfully." });
   })
 );
 

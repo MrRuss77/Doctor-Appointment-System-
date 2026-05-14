@@ -1,4 +1,5 @@
 import express from "express";
+import { sendSuccess } from "./apiResponse.js";
 import asyncHandler from "./asyncHandler.js";
 
 const humanizeModelName = (name = "Record") =>
@@ -23,7 +24,7 @@ const createCrudRouter = (Model, populate = []) => {
     const item = await query;
 
     if (!item) {
-      return res.status(404).json({ message: "Record not found." });
+      return res.status(404).json({ success: false, message: "Record not found." });
     }
 
     return res.json(item);
@@ -32,9 +33,10 @@ const createCrudRouter = (Model, populate = []) => {
   router.post("/", asyncHandler(async (req, res) => {
     const item = await Model.create(req.body);
     const payload = item.toObject ? item.toObject() : item;
-    return res.status(201).json({
-      ...payload,
-      message: `${entityLabel} created successfully.`
+    return sendSuccess(res, {
+      status: 201,
+      message: `${entityLabel} created successfully.`,
+      data: payload
     });
   }));
 
@@ -45,13 +47,13 @@ const createCrudRouter = (Model, populate = []) => {
     });
 
     if (!item) {
-      return res.status(404).json({ message: "Record not found." });
+      return res.status(404).json({ success: false, message: "Record not found." });
     }
 
     const payload = item.toObject ? item.toObject() : item;
-    return res.json({
-      ...payload,
-      message: `${entityLabel} updated successfully.`
+    return sendSuccess(res, {
+      message: `${entityLabel} updated successfully.`,
+      data: payload
     });
   }));
 
@@ -59,10 +61,12 @@ const createCrudRouter = (Model, populate = []) => {
     const item = await Model.findByIdAndDelete(req.params.id);
 
     if (!item) {
-      return res.status(404).json({ message: "Record not found." });
+      return res.status(404).json({ success: false, message: "Record not found." });
     }
 
-    return res.json({ message: `${entityLabel} deleted successfully.` });
+    return sendSuccess(res, {
+      message: `${entityLabel} deleted successfully.`
+    });
   }));
 
   return router;

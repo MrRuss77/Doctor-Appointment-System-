@@ -99,7 +99,7 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
       case "Appointments":
         return <DoctorAppointmentsView authUser={authUser} />;
       case "Availability":
-        return <AvailabilityView />;
+        return <AvailabilityView authUser={authUser} doctorProfile={doctorProfile} />;
       case "Patients":
         return <PatientsView authUser={authUser} />;
       default:

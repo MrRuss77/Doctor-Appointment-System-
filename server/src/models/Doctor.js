@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import {
+  hasOverlappingAvailabilitySlots,
   isValidAvailabilityDate,
   isValidTime24
 } from "../utils/availability.js";
@@ -69,6 +70,10 @@ const doctorSchema = new mongoose.Schema(
         validator: (value) => !value || isValidPhone(value),
         message: "Please provide a valid doctor phone number."
       }
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
     },
     department: {
       type: mongoose.Schema.Types.ObjectId,
@@ -141,6 +146,11 @@ doctorSchema.path("availabilitySlots").validate((slots = []) => {
     return start < end;
   });
 }, "Each availability slot must have a valid time range.");
+
+doctorSchema.path("availabilitySlots").validate(
+  (slots = []) => !hasOverlappingAvailabilitySlots(slots),
+  "Availability slots cannot overlap on the same day."
+);
 
 const Doctor = mongoose.model("Doctor", doctorSchema);
 

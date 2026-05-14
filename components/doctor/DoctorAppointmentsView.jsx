@@ -197,7 +197,7 @@ const DoctorAppointmentsView = ({ authUser }) => {
         return;
       }
 
-      await updateAppointment(appointment._id, {
+      const response = await updateAppointment(appointment._id, {
         patient: appointment.patient?._id || appointment.patient,
         doctor: appointment.doctor?._id || appointment.doctor,
         department: appointment.department?._id || appointment.department,
@@ -209,7 +209,7 @@ const DoctorAppointmentsView = ({ authUser }) => {
       });
 
       await loadAppointments();
-      setFeedback("Appointment status updated successfully.");
+      setFeedback(response.message || "Appointment status updated successfully.");
     } catch (error) {
       setFeedback(error.message);
     } finally {
@@ -262,7 +262,7 @@ const DoctorAppointmentsView = ({ authUser }) => {
         return;
       }
 
-      await updateAppointment(appointment._id, {
+      const response = await updateAppointment(appointment._id, {
         patient: appointment.patient?._id || appointment.patient,
         doctor: appointment.doctor?._id || appointment.doctor,
         department: appointment.department?._id || appointment.department,
@@ -274,7 +274,7 @@ const DoctorAppointmentsView = ({ authUser }) => {
       });
 
       await loadAppointments();
-      setFeedback("Appointment rescheduled successfully.");
+      setFeedback(response.message || "Appointment rescheduled successfully.");
     } catch (error) {
       setFeedback(error.message);
     } finally {

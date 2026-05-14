@@ -2,9 +2,11 @@ import express from "express";
 import Appointment from "../models/Appointment.js";
 import Department from "../models/Department.js";
 import Doctor from "../models/Doctor.js";
+import { sendSuccess } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import {
   getNextAvailabilityText,
+  hasOverlappingAvailabilitySlots,
   normalizeAvailabilitySlots,
   validateAvailabilitySlot
 } from "../utils/availability.js";
@@ -27,7 +29,7 @@ const serializeDoctor = (doctorDocument) => {
 };
 
 const findDoctorOrThrow = async (doctorId) => {
-  const doctor = await Doctor.findById(doctorId).populate("department");
+  const doctor = await Doctor.findById(doctorId).populate("department").populate("user");
 
   if (!doctor) {
     throw new HttpError(404, "Doctor not found.");
@@ -42,7 +44,7 @@ router.get(
     const query = String(req.query.q || "").trim();
 
     if (!query) {
-      const doctors = await Doctor.find().populate("department").sort({ createdAt: -1 });
+      const doctors = await Doctor.find().populate("department").populate("user").sort({ createdAt: -1 });
       return res.json(doctors.map(serializeDoctor));
     }
 
@@ -61,6 +63,7 @@ router.get(
       ]
     })
       .populate("department")
+      .populate("user")
       .sort({ fullName: 1 });
 
     return res.json(doctors.map(serializeDoctor));
@@ -70,7 +73,7 @@ router.get(
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
-    const doctors = await Doctor.find().populate("department").sort({ createdAt: -1 });
+    const doctors = await Doctor.find().populate("department").populate("user").sort({ createdAt: -1 });
     res.json(doctors.map(serializeDoctor));
   })
 );
@@ -82,6 +85,7 @@ router.get(
     const availabilitySlots = normalizeAvailabilitySlots(doctor.availabilitySlots || []);
 
     res.json({
+      success: true,
       doctorId: doctor._id,
       availabilityText:
         availabilitySlots.length > 0
@@ -108,14 +112,22 @@ router.post(
       slot
     ]);
 
+    if (hasOverlappingAvailabilitySlots(availabilitySlots)) {
+      throw new HttpError(400, "Availability slots cannot overlap on the same day.");
+    }
+
     doctor.availabilitySlots = availabilitySlots;
     doctor.availabilityText = getNextAvailabilityText(availabilitySlots);
     await doctor.save();
 
-    return res.status(201).json({
+    return sendSuccess(res, {
+      status: 201,
       message: "Availability slot added successfully.",
-      slots: doctor.availabilitySlots,
-      availabilityText: doctor.availabilityText
+      data: {
+        doctorId: doctor._id,
+        slots: doctor.availabilitySlots,
+        availabilityText: doctor.availabilityText
+      }
     });
   })
 );
@@ -140,14 +152,23 @@ router.put(
       });
     }
 
-    doctor.availabilitySlots = normalizeAvailabilitySlots(incomingSlots);
+    const normalizedSlots = normalizeAvailabilitySlots(incomingSlots);
+
+    if (hasOverlappingAvailabilitySlots(normalizedSlots)) {
+      throw new HttpError(400, "Availability slots cannot overlap on the same day.");
+    }
+
+    doctor.availabilitySlots = normalizedSlots;
     doctor.availabilityText = getNextAvailabilityText(doctor.availabilitySlots);
     await doctor.save();
 
-    return res.json({
+    return sendSuccess(res, {
       message: "Doctor availability updated successfully.",
-      slots: doctor.availabilitySlots,
-      availabilityText: doctor.availabilityText
+      data: {
+        doctorId: doctor._id,
+        slots: doctor.availabilitySlots,
+        availabilityText: doctor.availabilityText
+      }
     });
   })
 );
@@ -174,16 +195,25 @@ router.put(
     slot.isAvailable = req.body.isAvailable !== false;
     slot.note = String(req.body.note || "").trim();
 
-    doctor.availabilitySlots = normalizeAvailabilitySlots(
+    const normalizedSlots = normalizeAvailabilitySlots(
       doctor.availabilitySlots.map((item) => item.toObject?.() || item)
     );
+
+    if (hasOverlappingAvailabilitySlots(normalizedSlots)) {
+      throw new HttpError(400, "Availability slots cannot overlap on the same day.");
+    }
+
+    doctor.availabilitySlots = normalizedSlots;
     doctor.availabilityText = getNextAvailabilityText(doctor.availabilitySlots);
     await doctor.save();
 
-    return res.json({
+    return sendSuccess(res, {
       message: "Availability slot updated successfully.",
-      slots: doctor.availabilitySlots,
-      availabilityText: doctor.availabilityText
+      data: {
+        doctorId: doctor._id,
+        slots: doctor.availabilitySlots,
+        availabilityText: doctor.availabilityText
+      }
     });
   })
 );
@@ -208,10 +238,13 @@ router.delete(
         : "No availability added yet";
     await doctor.save();
 
-    return res.json({
+    return sendSuccess(res, {
       message: "Availability slot deleted successfully.",
-      slots: doctor.availabilitySlots,
-      availabilityText: doctor.availabilityText
+      data: {
+        doctorId: doctor._id,
+        slots: doctor.availabilitySlots,
+        availabilityText: doctor.availabilityText
+      }
     });
   })
 );
@@ -228,10 +261,11 @@ router.post(
   "/",
   asyncHandler(async (req, res) => {
     const doctor = await Doctor.create(req.body);
-    const populatedDoctor = await Doctor.findById(doctor._id).populate("department");
-    res.status(201).json({
-      ...serializeDoctor(populatedDoctor),
-      message: "Doctor created successfully."
+    const populatedDoctor = await Doctor.findById(doctor._id).populate("department").populate("user");
+    sendSuccess(res, {
+      status: 201,
+      message: "Doctor created successfully.",
+      data: serializeDoctor(populatedDoctor)
     });
   })
 );
@@ -242,7 +276,7 @@ router.put(
     const doctor = await Doctor.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
-    }).populate("department");
+    }).populate("department").populate("user");
 
     if (!doctor) {
       throw new HttpError(404, "Doctor not found.");
@@ -250,6 +284,7 @@ router.put(
 
     res.json({
       ...serializeDoctor(doctor),
+      success: true,
       message: "Doctor updated successfully."
     });
   })
@@ -278,7 +313,7 @@ router.delete(
 
     await Doctor.deleteOne({ _id: doctor._id });
 
-    res.json({ message: "Doctor deleted successfully." });
+    sendSuccess(res, { message: "Doctor deleted successfully." });
   })
 );
 

@@ -89,7 +89,7 @@ const AppointmentsView = () => {
       setAppointments((current) =>
         current.map((item) => (item._id === appointmentId ? { ...item, ...response } : item))
       );
-      setFeedback("Appointment status updated successfully.");
+      setFeedback(response.message || "Appointment status updated successfully.");
     } catch (error) {
       setAppointments(previousAppointments);
       setFeedback(error.message);
@@ -99,13 +99,19 @@ const AppointmentsView = () => {
   };
 
   const handleDelete = async (appointmentId) => {
+    const confirmed = window.confirm("Delete this appointment?");
+
+    if (!confirmed) {
+      return;
+    }
+
     setBusyId(appointmentId);
     setFeedback("");
 
     try {
-      await deleteAppointment(appointmentId);
+      const response = await deleteAppointment(appointmentId);
       setAppointments((current) => current.filter((item) => item._id !== appointmentId));
-      setFeedback("Appointment deleted successfully.");
+      setFeedback(response.message || "Appointment deleted successfully.");
     } catch (error) {
       setFeedback(error.message);
     } finally {
@@ -131,6 +137,8 @@ const AppointmentsView = () => {
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="cancelled">Cancelled</option>
+            <option value="rejected">Rejected</option>
+            <option value="completed">Completed</option>
           </select>
         </label>
       </div>

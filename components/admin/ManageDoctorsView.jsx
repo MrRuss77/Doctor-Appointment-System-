@@ -78,7 +78,7 @@ const ManageDoctorsView = () => {
       );
       setEditingDoctorId("");
       setOpenMenuId("");
-      setFeedback("Doctor updated successfully.");
+      setFeedback(updatedDoctor.message || "Doctor updated successfully.");
     } catch (error) {
       setFeedback(error.message);
     } finally {
@@ -87,14 +87,20 @@ const ManageDoctorsView = () => {
   };
 
   const handleDelete = async (doctorId) => {
+    const confirmed = window.confirm("Delete this doctor?");
+
+    if (!confirmed) {
+      return;
+    }
+
     setBusyId(doctorId);
     setFeedback("");
 
     try {
-      await deleteDoctor(doctorId);
+      const response = await deleteDoctor(doctorId);
       setDoctors((current) => current.filter((doctor) => doctor._id !== doctorId));
       setOpenMenuId("");
-      setFeedback("Doctor deleted successfully.");
+      setFeedback(response.message || "Doctor deleted successfully.");
     } catch (error) {
       setFeedback(error.message);
     } finally {

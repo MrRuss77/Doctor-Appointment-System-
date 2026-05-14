@@ -46,10 +46,12 @@ const seedDatabase = async () => {
     });
 
     const users = await User.insertMany([...platformUserCatalog, ...doctorUsers]);
+    const userMap = new Map(users.map((user) => [user.email, user._id]));
 
     const doctors = await Doctor.insertMany(
       doctorCatalog.map(({ departmentName, ...doctor }) => ({
         ...doctor,
+        user: userMap.get(doctor.email),
         department: departmentMap[departmentName]
       }))
     );

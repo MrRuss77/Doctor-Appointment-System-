@@ -64,6 +64,25 @@ export const normalizeAvailabilitySlots = (slots = []) =>
       return toMinutes(left.startTime) - toMinutes(right.startTime);
     });
 
+export const hasOverlappingAvailabilitySlots = (slots = []) => {
+  const normalizedSlots = normalizeAvailabilitySlots(slots);
+
+  for (let index = 1; index < normalizedSlots.length; index += 1) {
+    const previous = normalizedSlots[index - 1];
+    const current = normalizedSlots[index];
+
+    if (previous.date !== current.date) {
+      continue;
+    }
+
+    if (toMinutes(previous.endTime) > toMinutes(current.startTime)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export const getNextAvailabilityText = (slots = [], referenceDate = new Date()) => {
   const referenceKey = formatDateKey(referenceDate);
   const referenceMinutes = referenceDate.getHours() * 60 + referenceDate.getMinutes();

@@ -91,6 +91,28 @@ function PatientUserPage({ authUser }) {
     };
   }, [authUser, patientEmail, fallbackHistory]);
 
+  const refreshHistory = async () => {
+    const appointments = await fetchAppointments();
+
+    const matchedAppointments = appointments.filter((appointment) => {
+      const appointmentEmail = String(appointment.patient?.email || "").trim().toLowerCase();
+      const appointmentPatientId = String(appointment.patient?._id || appointment.patient || "");
+      const authPatientId = String(authUser?._id || authUser?.id || "");
+
+      if (patientEmail && appointmentEmail && patientEmail === appointmentEmail) {
+        return true;
+      }
+
+      if (authPatientId && appointmentPatientId && authPatientId === appointmentPatientId) {
+        return true;
+      }
+
+      return false;
+    });
+
+    setAppointmentHistory(matchedAppointments.length > 0 ? matchedAppointments : fallbackHistory);
+  };
+
   const filteredHistory = useMemo(() => {
     if (historyFilter === "all") {
       return appointmentHistory;
@@ -102,6 +124,31 @@ function PatientUserPage({ authUser }) {
   }, [appointmentHistory, historyFilter]);
 
   const getStatusTone = (status) => String(status || "pending").toLowerCase();
+
+  const handleCancelAppointment = async (appointment) => {
+    setBusyId(appointment._id);
+    setHistoryFeedback("");
+
+    try {
+      const response = await updateAppointment(appointment._id, {
+        patient: appointment.patient?._id || appointment.patient,
+        doctor: appointment.doctor?._id || appointment.doctor,
+        department: appointment.department?._id || appointment.department,
+        appointmentDate: appointment.appointmentDate,
+        reason: appointment.reason,
+        notes: appointment.notes,
+        status: "cancelled",
+        respondedByRole: "patient"
+      });
+
+      setHistoryFeedback(response.message || "Appointment cancelled successfully.");
+      await refreshHistory();
+    } catch (error) {
+      setHistoryFeedback(error.message);
+    } finally {
+      setBusyId("");
+    }
+  };
 
   return (
     <section className="patient-user-page">
@@ -167,6 +214,8 @@ function PatientUserPage({ authUser }) {
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
                   <option value="cancelled">Cancelled</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="completed">Completed</option>
                 </select>
               </label>
             </div>
@@ -197,6 +246,17 @@ function PatientUserPage({ authUser }) {
                     >
                       Status: {String(appointment.status || "pending")}
                     </div>
+
+                    {["pending", "confirmed"].includes(String(appointment.status || "").toLowerCase()) ? (
+                      <button
+                        type="button"
+                        className="admin-btn-pill red"
+                        onClick={() => handleCancelAppointment(appointment)}
+                        disabled={busyId === appointment._id}
+                      >
+                        {busyId === appointment._id ? "Cancelling..." : "Cancel"}
+                      </button>
+                    ) : null}
                   </div>
                 ))}
               </div>

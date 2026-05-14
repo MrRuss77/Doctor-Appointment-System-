@@ -1,53 +1,59 @@
 # Doctor Appointment System
 
-This project currently has:
+This project uses:
 
-- A Vite + React frontend in the project root
-- A new Node + Express + MongoDB backend in `server/`
+- React + Vite frontend in the project root
+- Node + Express backend in `server/`
+- MongoDB Atlas for the shared team database
 
-## Collections created for MongoDB
-
-The backend is structured around these MongoDB collections:
+## Backend collections
 
 - `users`
 - `doctors`
 - `departments`
 - `appointments`
 - `registrations`
+- `otps`
 
 ## 1. Install dependencies
-
-From the project root run:
 
 ```bash
 npm install
 ```
 
-## 2. Create your environment file
+## 2. Create your `.env`
 
-Copy `.env.example` to `.env`:
+Copy `.env.example` to `.env` and fill in your own values:
 
 ```bash
 cp .env.example .env
 ```
 
-Then set your MongoDB connection string inside `.env`.
-
-Example for local MongoDB:
+Required variables:
 
 ```env
 PORT=5001
-MONGODB_URI=mongodb://127.0.0.1:27017/doctor_appointment_system
+MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/doctor_appointment_system?retryWrites=true&w=majority&appName=DoctorAppointmentSystem
 CLIENT_URL=http://localhost:5173
+CLIENT_URLS=http://localhost:5173,http://127.0.0.1:5173
+GMAIL_USER=your-email@example.com
+GMAIL_APP_PASSWORD=your-app-password
+GROQ_API_KEY=your-groq-api-key
 ```
 
-Example for MongoDB Atlas:
+### Team Atlas setup
 
-```env
-PORT=5001
-MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster.mongodb.net/doctor_appointment_system
-CLIENT_URL=http://localhost:5173
-```
+Each teammate must do both:
+
+1. Use the same Atlas `MONGODB_URI` in their own local `.env`
+2. Add their current IP address in Atlas Network Access
+
+If Atlas works on one laptop but not another, the usual causes are:
+
+- missing `.env`
+- wrong Atlas URI
+- current IP not whitelisted in Atlas
+- teammate still connected to a different/local database
 
 ## 3. Start the backend
 
@@ -55,29 +61,40 @@ CLIENT_URL=http://localhost:5173
 npm run server
 ```
 
-For auto-reload during development:
+For auto-reload:
 
 ```bash
 npm run dev:server
 ```
 
-## Optional: create sample records immediately
+## 4. Sync the shared doctor/admin accounts
 
-To create all five collections with sample data:
+Use this on the shared Atlas database:
+
+```bash
+npm run sync:catalog
+```
+
+This safely syncs:
+
+- departments
+- doctors
+- doctor login accounts
+- platform admin/patient accounts
+
+It does **not** wipe the whole database.
+
+## 5. Full seed reset
+
+Use only if you intentionally want to recreate everything:
 
 ```bash
 npm run seed
 ```
 
-This will insert sample records into:
+This clears and recreates the main collections.
 
-- `users`
-- `departments`
-- `doctors`
-- `registrations`
-- `appointments`
-
-## 4. Start the frontend
+## 6. Start the frontend
 
 In another terminal:
 
@@ -85,38 +102,46 @@ In another terminal:
 npm run dev
 ```
 
-## 5. API endpoints
+## 7. Test login credentials
 
-Base URL:
+After running `npm run sync:catalog` or `npm run seed`:
+
+Admin:
+
+- `admin@gmail.com`
+- `admin01`
+
+Patient:
+
+- `prasanna@gmail.com`
+- `prasanna`
+
+Doctors:
+
+- any doctor email from the catalog
+- password: `doctor01`
+
+Example doctor emails:
+
+- `aavash.shrestha@example.com`
+- `kiran.thapa@example.com`
+- `neha.pradhan@example.com`
+
+## 8. API base URL
 
 ```text
 http://localhost:5001/api
 ```
 
-Available endpoints:
+## 9. Main backend features
 
-- `GET /api/health`
-- `GET|POST /api/users`
-- `GET|PUT|DELETE /api/users/:id`
-- `GET|POST /api/doctors`
-- `GET|PUT|DELETE /api/doctors/:id`
-- `GET|POST /api/departments`
-- `GET|PUT|DELETE /api/departments/:id`
-- `GET|POST /api/appointments`
-- `GET|PUT|DELETE /api/appointments/:id`
-- `GET|POST /api/registrations`
-- `GET|PUT|DELETE /api/registrations/:id`
+- doctor login from `users` collection
+- doctor availability stored in MongoDB
+- appointment booking restricted to doctor availability
+- admin appointment confirm/reject/cancel/complete actions
+- backend validation for auth, doctors, departments, appointments, and users
+- consistent success/error messages for frontend feedback
 
-## Suggested order to enter data
+## 10. Important note
 
-1. Create departments first
-2. Create doctors and link them to departments
-3. Create users
-4. Create registrations for users
-5. Create appointments linked to a user, doctor, and department
-
-## Notes
-
-- In MongoDB, these are collections, not SQL tables
-- The `Prasanna/` folder looks like an older copy of the frontend and is not required for the new backend setup
-- If you want, the next step can be connecting the React frontend to these APIs instead of using hardcoded doctor data
+Some frontend pages were previously using hardcoded/demo data. The current backend work connects the most important panels to the real API, but every teammate still needs the correct `.env` and Atlas access for the shared data to appear.

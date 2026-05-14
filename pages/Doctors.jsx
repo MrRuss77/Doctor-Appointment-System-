@@ -160,6 +160,7 @@ const mapDoctorRecord = (doctor) => ({
   specialization: doctor.specialization || "Not specified",
   qualification: doctor.qualification || "Not specified",
   availability: doctor.availabilityText || "Schedule not updated",
+  availabilitySlots: Array.isArray(doctor.availabilitySlots) ? doctor.availabilitySlots : [],
   image: doctor.image || "",
   backendId: doctor._id,
   departmentId: doctor.department?._id
@@ -183,12 +184,18 @@ const getMessageColor = (message) => {
   return "#dc2626";
 };
 
-const demoPatientUser = {
-  firstName: "Prasanna",
-  lastName: "Patient",
-  email: "prasanna@example.com",
-  phone: "9800000000",
-  role: "patient"
+const formatAvailabilityDate = (value) => {
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    weekday: "short"
+  });
 };
 
 const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSuccess, onBack }) => {
@@ -272,6 +279,68 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     setBookingMessage("");
   }, [doctorFilter]);
 
+  const availableSlotMap = React.useMemo(() => {
+    if (!selectedDoctor?.availabilitySlots) {
+      return new Map();
+    }
+
+    return selectedDoctor.availabilitySlots.reduce((map, slot) => {
+      if (
+        slot?.isAvailable === false ||
+        !slot?.date ||
+        !slot?.startTime
+      ) {
+        return map;
+      }
+
+      const existing = map.get(slot.date) || [];
+      existing.push(slot.startTime);
+      existing.sort((left, right) => left.localeCompare(right));
+      map.set(slot.date, existing);
+      return map;
+    }, new Map());
+  }, [selectedDoctor]);
+
+  const availableDates = React.useMemo(
+    () => Array.from(availableSlotMap.keys()).sort((left, right) => left.localeCompare(right)),
+    [availableSlotMap]
+  );
+
+  const availableTimes = React.useMemo(
+    () => (bookingForm.date ? availableSlotMap.get(bookingForm.date) || [] : []),
+    [availableSlotMap, bookingForm.date]
+  );
+
+  useEffect(() => {
+    if (!selectedDoctor) {
+      return;
+    }
+
+    const nextDate = availableDates[0] || "";
+    const nextTime = nextDate ? (availableSlotMap.get(nextDate) || [])[0] || "" : "";
+
+    setBookingForm((current) => ({
+      ...current,
+      date: nextDate,
+      time: nextTime
+    }));
+  }, [selectedDoctor, availableDates, availableSlotMap]);
+
+  useEffect(() => {
+    if (!bookingForm.date) {
+      return;
+    }
+
+    if (availableTimes.length === 0) {
+      setBookingForm((current) => ({ ...current, time: "" }));
+      return;
+    }
+
+    if (!availableTimes.includes(bookingForm.time)) {
+      setBookingForm((current) => ({ ...current, time: availableTimes[0] }));
+    }
+  }, [availableTimes, bookingForm.date, bookingForm.time]);
+
   const clearStatus = () => {
     setAuthMessage("");
   };
@@ -315,16 +384,6 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
   const handleLogin = async (credentials) => {
     if (authBusy) {
-      return;
-    }
-
-    const normalizedEmail = credentials.email.trim().toLowerCase();
-
-    if (normalizedEmail === "prasanna@example.com" && credentials.password === "patient123") {
-      onLoginSuccess?.(demoPatientUser);
-      setAuthMessage("Login successful. Welcome Prasanna Patient.");
-      setLoginView("login");
-      onNavigate?.("home");
       return;
     }
 
@@ -398,7 +457,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     setAuthBusy(true);
 
     try {
-      await createUser({
+      const response = await createUser({
         firstName: payload.firstName,
         lastName: payload.lastName,
         email: payload.email,
@@ -407,7 +466,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         role: "patient"
       });
 
-      setAuthMessage(`Registration successful. Please login.`);
+      setAuthMessage(response.message || "Registration successful. Please login.");
       setLoginView("login");
     } catch (error) {
       setAuthMessage(error.message);
@@ -526,6 +585,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       return;
     }
 
+    if (!bookingForm.date || !bookingForm.time) {
+      setBookingMessage("Please choose an available date and time slot.");
+      return;
+    }
+
     const appointmentDate = new Date(`${bookingForm.date}T${bookingForm.time}:00`);
 
     if (Number.isNaN(appointmentDate.getTime())) {
@@ -538,7 +602,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     try {
       const patient = await ensurePatient();
 
-      await createAppointment({
+      const response = await createAppointment({
         patient: patient._id,
         doctor: selectedDoctor.backendId,
         department: selectedDoctor.departmentId,
@@ -556,7 +620,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         ].join(" | ")
       });
 
-      setBookingMessage("Appointment booked successfully.");
+      setBookingMessage(response.message || "Appointment booked successfully.");
       setBookingForm(emptyBookingForm);
     } catch (error) {
       setBookingMessage(error.message);
@@ -778,20 +842,40 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
                 <label className="appointment-field">
                   <span>Pick a Date*</span>
-                  <input
-                    type="date"
+                  <select
+                    className="appointment-select appointment-select--green"
                     value={bookingForm.date}
                     onChange={(event) => updateBookingField("date", event.target.value)}
-                  />
+                  >
+                    {availableDates.length > 0 ? (
+                      availableDates.map((dateValue) => (
+                        <option key={dateValue} value={dateValue}>
+                          {formatAvailabilityDate(dateValue)}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No dates available</option>
+                    )}
+                  </select>
                 </label>
 
                 <label className="appointment-field">
                   <span>Time*</span>
-                  <input
-                    type="time"
+                  <select
+                    className="appointment-select appointment-select--orange"
                     value={bookingForm.time}
                     onChange={(event) => updateBookingField("time", event.target.value)}
-                  />
+                  >
+                    {availableTimes.length > 0 ? (
+                      availableTimes.map((timeValue) => (
+                        <option key={timeValue} value={timeValue}>
+                          {timeValue}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No times available</option>
+                    )}
+                  </select>
                 </label>
 
                 <label className="appointment-field appointment-field--full">
