@@ -40,6 +40,7 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
     authUser?.name ||
     "";
   const doctorName = doctorProfile?.fullName || derivedDoctorName || fallbackDoctorIdentity.name;
+  const normalizedAuthUserId = String(authUser?._id || authUser?.id || "");
   const normalizedDoctorName = doctorName.replace(/^Dr\.\s*/i, "").trim().toLowerCase();
   const normalizedDoctorEmail = authUser?.email?.trim().toLowerCase() || "";
   const doctorSpecialty =
@@ -67,8 +68,13 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
         }
 
         const matchedDoctor = doctors.find((doctor) => {
+          const doctorUserId = String(doctor.user?._id || doctor.user || "");
           const doctorEmail = doctor.email?.trim().toLowerCase();
           const doctorFullName = doctor.fullName?.trim().toLowerCase();
+
+          if (normalizedAuthUserId && doctorUserId) {
+            return doctorUserId === normalizedAuthUserId;
+          }
 
           if (normalizedDoctorEmail && doctorEmail) {
             return doctorEmail === normalizedDoctorEmail;
@@ -92,18 +98,18 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
     return () => {
       isActive = false;
     };
-  }, [normalizedDoctorEmail, normalizedDoctorName]);
+  }, [normalizedAuthUserId, normalizedDoctorEmail, normalizedDoctorName]);
 
   const renderContent = () => {
     switch (activeMenu) {
       case "Appointments":
-        return <DoctorAppointmentsView authUser={authUser} />;
+        return <DoctorAppointmentsView authUser={authUser} doctorProfile={doctorProfile} />;
       case "Availability":
         return <AvailabilityView authUser={authUser} doctorProfile={doctorProfile} />;
       case "Patients":
-        return <PatientsView authUser={authUser} />;
+        return <PatientsView authUser={authUser} doctorProfile={doctorProfile} />;
       default:
-        return <DoctorAppointmentsView authUser={authUser} />;
+        return <DoctorAppointmentsView authUser={authUser} doctorProfile={doctorProfile} />;
     }
   };
 

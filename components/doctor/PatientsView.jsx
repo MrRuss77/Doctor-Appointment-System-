@@ -25,7 +25,7 @@ const fallbackPatientHistory = [
   }
 ];
 
-const PatientsView = ({ authUser }) => {
+const PatientsView = ({ authUser, doctorProfile }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [openMenuId, setOpenMenuId] = useState("");
@@ -33,7 +33,7 @@ const PatientsView = ({ authUser }) => {
   useEffect(() => {
     let active = true;
 
-    fetchAppointments()
+    fetchAppointments(doctorProfile?._id ? { doctor: doctorProfile._id } : {})
       .then((data) => {
         if (active) {
           setAppointments(data || []);
@@ -48,7 +48,7 @@ const PatientsView = ({ authUser }) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [doctorProfile?._id]);
 
   useEffect(() => {
     const handleWindowClick = () => {
@@ -75,14 +75,20 @@ const PatientsView = ({ authUser }) => {
   };
 
   const patients = useMemo(() => {
+    const doctorId = String(doctorProfile?._id || "");
     const authEmail = String(authUser?.email || "").trim().toLowerCase();
     const authFullName = normalizeName(
       [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ") || authUser?.name || ""
     );
 
     const relevantAppointments = appointments.filter((appointment) => {
+      const appointmentDoctorId = String(appointment.doctor?._id || appointment.doctor || "");
       const doctorEmail = String(appointment.doctor?.email || "").trim().toLowerCase();
       const doctorName = normalizeName(appointment.doctor?.fullName || "");
+
+      if (doctorId && appointmentDoctorId && doctorId === appointmentDoctorId) {
+        return true;
+      }
 
       if (authEmail && doctorEmail && authEmail === doctorEmail) {
         return true;
@@ -140,7 +146,7 @@ const PatientsView = ({ authUser }) => {
       ...patient,
       history: patient.history.length > 0 ? patient.history.reverse() : fallbackPatientHistory
     }));
-  }, [appointments, authUser]);
+  }, [appointments, authUser, doctorProfile?._id]);
 
   return (
     <div className="patients-view">

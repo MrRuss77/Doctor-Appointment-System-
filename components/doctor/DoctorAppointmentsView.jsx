@@ -61,14 +61,15 @@ const buildFallbackAppointments = (authUser) => [
   }
 ];
 
-const DoctorAppointmentsView = ({ authUser }) => {
+const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
   const [appointments, setAppointments] = useState([]);
   const [feedback, setFeedback] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [busyId, setBusyId] = useState("");
 
   const loadAppointments = async () => {
-    const data = await fetchAppointments();
+    const filters = doctorProfile?._id ? { doctor: doctorProfile._id } : {};
+    const data = await fetchAppointments(filters);
     setAppointments(data || []);
   };
 
@@ -84,7 +85,7 @@ const DoctorAppointmentsView = ({ authUser }) => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [doctorProfile?._id]);
 
   const mappedPatientForModal = useMemo(() => {
     if (!selectedAppointment?.patient) {
@@ -116,14 +117,20 @@ const DoctorAppointmentsView = ({ authUser }) => {
   const fallbackAppointments = useMemo(() => buildFallbackAppointments(authUser), [authUser]);
 
   const filteredAppointments = useMemo(() => {
+    const doctorId = String(doctorProfile?._id || "");
     const authEmail = String(authUser?.email || "").trim().toLowerCase();
     const authFullName = normalizeName(
       [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ") || authUser?.name || ""
     );
 
     const matches = appointments.filter((appointment) => {
+      const appointmentDoctorId = String(appointment.doctor?._id || appointment.doctor || "");
       const doctorEmail = String(appointment.doctor?.email || "").trim().toLowerCase();
       const doctorName = normalizeName(appointment.doctor?.fullName || "");
+
+      if (doctorId && appointmentDoctorId && doctorId === appointmentDoctorId) {
+        return true;
+      }
 
       if (authEmail && doctorEmail && authEmail === doctorEmail) {
         return true;
@@ -136,16 +143,8 @@ const DoctorAppointmentsView = ({ authUser }) => {
       return false;
     });
 
-    if (matches.length > 0) {
-      return matches;
-    }
-
-    if (appointments.length > 0) {
-      return appointments;
-    }
-
-    return fallbackAppointments;
-  }, [appointments, authUser, fallbackAppointments]);
+    return matches.length > 0 ? matches : fallbackAppointments;
+  }, [appointments, authUser, doctorProfile?._id, fallbackAppointments]);
 
   const dashboardStats = useMemo(() => {
     const today = new Date();

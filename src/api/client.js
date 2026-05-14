@@ -80,6 +80,21 @@ const request = async (path, options = {}) => {
   return unwrapPayload(payload);
 };
 
+const withQuery = (path, params = {}) => {
+  const query = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || typeof value === "undefined" || value === "") {
+      return;
+    }
+
+    query.set(key, String(value));
+  });
+
+  const queryString = query.toString();
+  return queryString ? `${path}?${queryString}` : path;
+};
+
 export const fetchDoctors = async (query = "") => {
   const trimmedQuery = query.trim();
   const path = trimmedQuery
@@ -89,7 +104,7 @@ export const fetchDoctors = async (query = "") => {
   return request(path);
 };
 export const fetchDepartments = async () => request("/departments");
-export const fetchAppointments = async () => request("/appointments");
+export const fetchAppointments = async (filters = {}) => request(withQuery("/appointments", filters));
 export const fetchUsers = async () => request("/users");
 export const fetchAppointment = async (appointmentId) => request(`/appointments/${appointmentId}`);
 export const fetchDoctorAvailability = async (doctorId) => request(`/doctors/${doctorId}/availability`);
