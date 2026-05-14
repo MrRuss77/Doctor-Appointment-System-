@@ -54,7 +54,7 @@ const DashboardView = () => {
     );
 
     try {
-      await respondToAppointment(appointmentId, {
+      const response = await respondToAppointment(appointmentId, {
         status: nextStatus,
         adminReply:
           nextStatus === "confirmed"
@@ -64,7 +64,9 @@ const DashboardView = () => {
               : "Appointment kept pending for review.",
         respondedByRole: "admin"
       });
-      await loadAppointments();
+      setAppointments((current) =>
+        current.map((item) => (item._id === appointmentId ? { ...item, ...response } : item))
+      );
     } catch (err) {
       setAppointments(previousAppointments);
       setError(err.message);

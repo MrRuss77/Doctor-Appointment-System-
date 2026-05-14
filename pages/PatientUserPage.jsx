@@ -101,74 +101,6 @@ function PatientUserPage({ authUser }) {
     );
   }, [appointmentHistory, historyFilter]);
 
-  const handleStatusChange = async (appointmentId, nextStatus) => {
-    const appointment = appointmentHistory.find((item) => item._id === appointmentId);
-    if (!appointment) {
-      return;
-    }
-
-    if (String(appointment.status || "").toLowerCase() === nextStatus) {
-      return;
-    }
-
-    if (nextStatus === "cancelled") {
-      const confirmCancel = window.confirm(
-        "Are you sure you want to cancel your appointment?"
-      );
-
-      if (!confirmCancel) {
-        return;
-      }
-    }
-
-    if (String(appointmentId).startsWith("demo-history-")) {
-      setAppointmentHistory((currentAppointments) =>
-        currentAppointments.map((item) =>
-          item._id === appointmentId ? { ...item, status: nextStatus } : item
-        )
-      );
-      setHistoryFeedback(
-        nextStatus === "cancelled"
-          ? "Appointment cancelled successfully."
-          : `Appointment marked as ${nextStatus}.`
-      );
-      return;
-    }
-
-    setBusyId(appointmentId);
-
-    try {
-      await updateAppointment(appointmentId, {
-        patient: appointment.patient?._id || appointment.patient,
-        doctor: appointment.doctor?._id || appointment.doctor,
-        department: appointment.department?._id || appointment.department,
-        appointmentDate: appointment.appointmentDate,
-        reason: appointment.reason,
-        notes: appointment.notes,
-        status: nextStatus
-      });
-
-      setAppointmentHistory((currentAppointments) =>
-        currentAppointments.map((item) =>
-          item._id === appointmentId ? { ...item, status: nextStatus } : item
-        )
-      );
-      setHistoryFeedback(
-        nextStatus === "cancelled"
-          ? "Appointment cancelled successfully."
-          : `Appointment updated to ${nextStatus}.`
-      );
-    } catch (error) {
-      setHistoryFeedback(error.message);
-    } finally {
-      setBusyId("");
-    }
-  };
-
-  const handleCancelAppointment = async (appointmentId) => {
-    handleStatusChange(appointmentId, "cancelled");
-  };
-
   const getStatusTone = (status) => String(status || "pending").toLowerCase();
 
   return (
@@ -253,15 +185,9 @@ function PatientUserPage({ authUser }) {
                         appointment.status
                       )}`}
                     >
-                      <select
-                        value={String(appointment.status || "pending").toLowerCase()}
-                        onChange={(event) => handleStatusChange(appointment._id, event.target.value)}
-                        disabled={busyId === appointment._id}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                      <span className="patient-status-badge" style={{ textTransform: 'capitalize', fontWeight: 'bold' }}>
+                        {String(appointment.status || "pending")}
+                      </span>
                     </div>
 
                     <div
@@ -269,9 +195,7 @@ function PatientUserPage({ authUser }) {
                         appointment.status
                       )}`}
                     >
-                      {busyId === appointment._id
-                        ? "Updating..."
-                        : `Status: ${String(appointment.status || "pending")}`}
+                      Status: {String(appointment.status || "pending")}
                     </div>
                   </div>
                 ))}

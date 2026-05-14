@@ -837,24 +837,26 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
                 </button>
               ) : null}
             </div>
-            <div className="doctor-grid">
-              {filteredDoctors.length > 0 ? (
-                filteredDoctors.map((doc) => (
-                  <DoctorCard
-                    key={doc.backendId || doc.name}
-                    doctor={doc}
-                    onBookAppointment={openBooking}
-                  />
-                ))
-              ) : (
-                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px 20px" }}>
-                  <p style={{ fontSize: "18px", color: "#64748b" }}>
-                    {doctorSearch.trim()
-                      ? "No doctors match your search right now."
-                      : "No doctors available in this department right now."}
-                  </p>
-                </div>
-              )}
+            <div className="glass-backdrop">
+              <div className="doctor-grid">
+                {filteredDoctors.length > 0 ? (
+                  filteredDoctors.map((doc) => (
+                    <DoctorCard
+                      key={doc.backendId || doc.name}
+                      doctor={doc}
+                      onBookAppointment={openBooking}
+                    />
+                  ))
+                ) : (
+                  <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "40px 20px" }}>
+                    <p style={{ fontSize: "18px", color: "#64748b" }}>
+                      {doctorSearch.trim()
+                        ? "No doctors match your search right now."
+                        : "No doctors available in this department right now."}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )

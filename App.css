@@ -849,13 +849,21 @@ video {
   font-weight: 800;
 }
 
+.glass-backdrop {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  border-radius: 34px;
+  padding: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 18px 38px rgba(45, 76, 130, 0.08);
+}
+
 .doctor-grid {
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 30px;
 }
 
 .doctor-card {
-  min-height: 640px;
   padding: 34px;
   border-radius: 30px;
 }
@@ -1121,9 +1129,9 @@ video {
   padding: 0 22px;
   border: none;
   border-radius: 16px;
-  background: linear-gradient(135deg, #ef4444 0%, #f97316 52%, #22c55e 100%);
+  background: linear-gradient(135deg, #5f8dff, #15c5b6);
   color: #fff;
-  box-shadow: 0 18px 35px rgba(239, 68, 68, 0.22);
+  box-shadow: 0 16px 24px rgba(56, 96, 181, 0.18);
 }
 
 .placeholder-panel {

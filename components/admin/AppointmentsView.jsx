@@ -76,7 +76,7 @@ const AppointmentsView = () => {
     );
 
     try {
-      await respondToAppointment(appointmentId, {
+      const response = await respondToAppointment(appointmentId, {
         status: nextStatus,
         adminReply:
           nextStatus === "confirmed"
@@ -86,7 +86,9 @@ const AppointmentsView = () => {
               : "Appointment kept pending for review.",
         respondedByRole: "admin"
       });
-      await loadAppointments();
+      setAppointments((current) =>
+        current.map((item) => (item._id === appointmentId ? { ...item, ...response } : item))
+      );
       setFeedback("Appointment status updated successfully.");
     } catch (error) {
       setAppointments(previousAppointments);

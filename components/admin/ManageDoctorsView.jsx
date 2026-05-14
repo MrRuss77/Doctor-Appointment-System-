@@ -40,7 +40,8 @@ const ManageDoctorsView = () => {
       ...current,
       [doctor._id]: {
         fullName: doctor.fullName,
-        specialization: doctor.specialization
+        specialization: doctor.specialization,
+        consultationFee: doctor.consultationFee || ""
       }
     }));
   };
@@ -68,7 +69,8 @@ const ManageDoctorsView = () => {
       const updatedDoctor = await updateDoctor(doctor._id, {
         ...doctor,
         fullName: draft.fullName.trim(),
-        specialization: draft.specialization.trim()
+        specialization: draft.specialization.trim(),
+        consultationFee: draft.consultationFee ? Number(draft.consultationFee) : 0
       });
 
       setDoctors((current) =>
@@ -155,9 +157,20 @@ const ManageDoctorsView = () => {
                     )}
                   </div>
                   <div className="col-patients">
-                    <div className="manage-primary">
-                      Rs. {Number(doctor.consultationFee || 0).toLocaleString()}
-                    </div>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        className="admin-input"
+                        value={draft.consultationFee || ""}
+                        onChange={(event) =>
+                          handleDraftChange(doctor._id, "consultationFee", event.target.value)
+                        }
+                      />
+                    ) : (
+                      <div className="manage-primary">
+                        Rs. {Number(doctor.consultationFee || 0).toLocaleString()}
+                      </div>
+                    )}
                     <div className="manage-secondary">{doctor.availabilityText}</div>
                   </div>
                   <div className="col-actions col-actions--responsive">
