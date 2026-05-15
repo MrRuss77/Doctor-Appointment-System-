@@ -16,7 +16,7 @@ import HttpError from "../utils/httpError.js";
 const router = express.Router();
 
 const populateAppointment = (query) =>
-  query.populate("patient").populate("doctor").populate("department");
+  query.read("primary").populate("patient").populate("doctor").populate("department");
 
 const ensureAppointmentRelations = async ({ patient, doctor, department }) => {
   const [patientRecord, doctorRecord, departmentRecord] = await Promise.all([
@@ -150,11 +150,12 @@ router.post(
       appointmentDate
     });
 
-    const appointment = await Appointment.create({
+    const appointment = new Appointment({
       ...req.body,
       appointmentDate,
       status: req.body.status || "pending"
     });
+    await appointment.save({ w: "majority" });
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
 
@@ -189,7 +190,7 @@ router.put(
     appointment.respondedByRole = req.body.respondedByRole || "admin";
     appointment.respondedAt = new Date();
 
-    await appointment.save();
+    await appointment.save({ w: "majority" });
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
 
@@ -257,7 +258,7 @@ router.put(
       appointment.respondedByRole = req.body.respondedByRole || "admin";
     }
 
-    await appointment.save();
+    await appointment.save({ w: "majority" });
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
 

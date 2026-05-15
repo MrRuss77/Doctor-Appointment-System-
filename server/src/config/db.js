@@ -7,7 +7,11 @@ const connectDatabase = async () => {
     throw new Error("MONGODB_URI is missing. Add it to your .env file.");
   }
 
-  await mongoose.connect(mongoUri);
+  await mongoose.connect(mongoUri, {
+    retryWrites: true,
+    readPreference: "primary",
+    w: "majority"
+  });
   console.log("MongoDB connected successfully.");
 };
 
