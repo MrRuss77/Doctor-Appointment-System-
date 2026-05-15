@@ -1039,6 +1039,20 @@ video {
   letter-spacing: -0.03em;
 }
 
+.appointment-fee {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  margin: 0 0 18px;
+  padding: 0 16px;
+  border: 1px solid rgba(21, 197, 182, 0.26);
+  border-radius: 16px;
+  background: rgba(236, 253, 245, 0.82);
+  color: #166534;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
 .appointment-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1113,6 +1127,110 @@ video {
 
 .appointment-field--full {
   grid-column: 1 / -1;
+}
+
+.appointment-slot-picker {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(76, 116, 194, 0.12);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.74);
+}
+
+.appointment-slot-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.appointment-slot-picker__header span {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.appointment-slot-picker__header small {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.appointment-day-list,
+.appointment-time-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.appointment-day-list button,
+.appointment-time-slot {
+  border: 1px solid rgba(76, 116, 194, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.appointment-day-list button {
+  min-height: 42px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.appointment-day-list button.active,
+.appointment-time-slot.active {
+  border-color: rgba(21, 197, 182, 0.54);
+  background: linear-gradient(135deg, rgba(95, 141, 255, 0.14), rgba(21, 197, 182, 0.18));
+  color: #145366;
+  box-shadow: 0 12px 24px rgba(56, 96, 181, 0.12);
+}
+
+.appointment-time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+}
+
+.appointment-time-slot {
+  min-height: 68px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.appointment-time-slot strong,
+.appointment-time-slot span {
+  display: block;
+}
+
+.appointment-time-slot strong {
+  font-size: 0.95rem;
+}
+
+.appointment-time-slot span {
+  margin-top: 4px;
+  color: #166534;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.appointment-time-slot.disabled {
+  background: rgba(226, 232, 240, 0.72);
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.appointment-time-slot.disabled span {
+  color: #b45309;
+}
+
+.appointment-slot-picker__empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .appointment-actions {
@@ -2747,4 +2865,3 @@ video {
     align-items: flex-start;
   }
 }
-

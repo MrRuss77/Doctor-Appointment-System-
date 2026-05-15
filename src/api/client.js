@@ -108,6 +108,8 @@ export const fetchAppointments = async (filters = {}) => request(withQuery("/app
 export const fetchUsers = async () => request("/users");
 export const fetchAppointment = async (appointmentId) => request(`/appointments/${appointmentId}`);
 export const fetchDoctorAvailability = async (doctorId) => request(`/doctors/${doctorId}/availability`);
+export const fetchChatHistory = async (userId) =>
+  request(withQuery("/chat/history", { userId }));
 
 export const createUser = async (body) =>
   request("/users", {
@@ -226,6 +228,12 @@ export const requestPasswordReset = async (body) =>
 
 export const verifyOtpCode = async (body) =>
   request("/auth/verify-otp", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+
+export const sendChatMessage = async (body) =>
+  request("/chat", {
     method: "POST",
     body: JSON.stringify(body)
   });

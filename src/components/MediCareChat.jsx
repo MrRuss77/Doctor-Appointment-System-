@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { fetchChatHistory, sendChatMessage } from "../api/client";
 
 const defaultMessage = {
   role: "assistant",
-  content: "Hi! I'm MediCare, your AI health assistant. How can I help you today?"
+  content: "Hi! I'm MediCare, the virtual assistant for this Doctor Appointment Booking System. How can I help you today?"
 };
 
 const styles = {
@@ -138,33 +139,105 @@ const CloseIcon = () => (
 
 const getUserContext = () => {
   try {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = getStoredUser();
     if (!user) return null;
-    return `The user's name is ${user.firstName} ${user.lastName}, their email is ${user.email}.`;
+    return `The user's name is ${user.firstName} ${user.lastName}, their email is ${user.email}, and their phone number is ${user.phone || "not provided"}.`;
   } catch {
     return null;
   }
 };
 
-const STORAGE_KEY = "medicare_chat_history";
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("medicare_auth_user") || localStorage.getItem("user"));
+  } catch {
+    return null;
+  }
+};
+
+const getUserId = (user) => String(user?._id || user?.id || "").trim();
+const getStorageKey = (userId) => `medicare_chat_history_${userId || "guest"}`;
 
 const MediCareChat = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeUserId, setActiveUserId] = useState(() => getUserId(getStoredUser()));
+  const [historyUserId, setHistoryUserId] = useState(() => getUserId(getStoredUser()));
   const [messages, setMessages] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(getStorageKey(getUserId(getStoredUser())));
       return saved ? JSON.parse(saved) : [defaultMessage];
     } catch {
       return [defaultMessage];
     }
   });
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    const syncUser = () => {
+      const nextUserId = getUserId(getStoredUser());
+      setActiveUserId((current) => (current === nextUserId ? current : nextUserId));
+    };
+
+    syncUser();
+    window.addEventListener("storage", syncUser);
+    const timer = window.setInterval(syncUser, 1000);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadHistory = async () => {
+      setHistoryUserId("");
+
+      try {
+        const saved = localStorage.getItem(getStorageKey(activeUserId));
+        setMessages(saved ? JSON.parse(saved) : [defaultMessage]);
+      } catch {
+        setMessages([defaultMessage]);
+      }
+
+      if (!activeUserId) {
+        setHistoryUserId(activeUserId);
+        return;
+      }
+
+      try {
+        const history = await fetchChatHistory(activeUserId);
+
+        if (isActive && Array.isArray(history.messages)) {
+          setMessages(history.messages.length ? history.messages : [defaultMessage]);
+        }
+      } catch (_error) {
+        // Local history remains available if the backend is temporarily unreachable.
+      } finally {
+        if (isActive) {
+          setHistoryUserId(activeUserId);
+        }
+      }
+    };
+
+    loadHistory();
+
+    return () => {
+      isActive = false;
+    };
+  }, [activeUserId]);
+
+  useEffect(() => {
+    if (historyUserId !== activeUserId) {
+      return;
+    }
+
+    localStorage.setItem(getStorageKey(activeUserId), JSON.stringify(messages));
+  }, [activeUserId, historyUserId, messages]);
 
   useEffect(() => {
     if (isOpen) {
@@ -187,23 +260,13 @@ const MediCareChat = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messages: nextMessages,
-          userContext: getUserContext()
-        })
+      const data = await sendChatMessage({
+        messages: nextMessages,
+        userId: activeUserId,
+        userContext: getUserContext()
       });
-      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Chat request failed.");
-      }
-
-      setMessages((current) => [
+      setMessages(Array.isArray(data.messages) ? data.messages : (current) => [
         ...current,
         { role: "assistant", content: data.reply }
       ]);
@@ -226,7 +289,7 @@ const MediCareChat = () => {
         <section style={styles.popup} aria-label="MediCare AI chat">
           <header style={styles.header}>
             <h2 style={styles.title}>MediCare</h2>
-            <p style={styles.subtitle}>AI Health Assistant</p>
+            <p style={styles.subtitle}>Doctor Appointment Assistant</p>
           </header>
 
           <div style={styles.messages}>

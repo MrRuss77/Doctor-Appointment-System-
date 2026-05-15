@@ -8,6 +8,8 @@ import ResetPasswordCard from "../components/auth/ResetPasswordCard";
 import {
   createAppointment,
   createUser,
+  fetchAppointments,
+  fetchDoctorAvailability,
   fetchDoctors,
   fetchUsers,
   loginUser,
@@ -161,6 +163,7 @@ const mapDoctorRecord = (doctor) => ({
   qualification: doctor.qualification || "Not specified",
   availability: doctor.availabilityText || "Schedule not updated",
   availabilitySlots: Array.isArray(doctor.availabilitySlots) ? doctor.availabilitySlots : [],
+  consultationFee: Number(doctor.consultationFee || 0),
   image: doctor.image || "",
   backendId: doctor._id,
   departmentId: doctor.department?._id
@@ -198,6 +201,43 @@ const formatAvailabilityDate = (value) => {
   });
 };
 
+const formatTimeLabel = (timeValue) => {
+  const [hours, minutes] = String(timeValue || "").split(":").map(Number);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return timeValue;
+  }
+
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const normalizedHours = hours % 12 || 12;
+  return `${normalizedHours}:${String(minutes).padStart(2, "0")} ${suffix}`;
+};
+
+const toMinutes = (timeValue) => {
+  const [hours, minutes] = String(timeValue || "").split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const fromMinutes = (totalMinutes) => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+const buildProfilePrefill = (user) => {
+  if (!user) {
+    return {};
+  }
+
+  return {
+    fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+    phone: user.phone || "",
+    email: user.email || ""
+  };
+};
+
+const getUserId = (user) => String(user?._id || user?.id || "").trim();
+
 const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSuccess, onBack }) => {
   const [loginView, setLoginView] = useState("login");
   const [authMessage, setAuthMessage] = useState("");
@@ -210,6 +250,9 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [doctorTab, setDoctorTab] = useState("specialization");
+  const [selectedDoctorSlots, setSelectedDoctorSlots] = useState([]);
+  const [doctorAppointments, setDoctorAppointments] = useState([]);
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
 
   const [bookingForm, setBookingForm] = useState(emptyBookingForm);
   const [bookingBusy, setBookingBusy] = useState(false);
@@ -279,36 +322,130 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     setBookingMessage("");
   }, [doctorFilter]);
 
-  const availableSlotMap = React.useMemo(() => {
-    if (!selectedDoctor?.availabilitySlots) {
+  useEffect(() => {
+    if (!selectedDoctor?.backendId) {
+      setSelectedDoctorSlots([]);
+      setDoctorAppointments([]);
+      setAvailabilityMessage("");
+      return;
+    }
+
+    let isActive = true;
+
+    const loadBookingData = async () => {
+      setAvailabilityMessage("Refreshing doctor availability...");
+
+      try {
+        const [availability, appointments] = await Promise.all([
+          fetchDoctorAvailability(selectedDoctor.backendId),
+          fetchAppointments({ doctor: selectedDoctor.backendId })
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setSelectedDoctorSlots(Array.isArray(availability.slots) ? availability.slots : []);
+        setDoctorAppointments(Array.isArray(appointments) ? appointments : []);
+        setAvailabilityMessage("");
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setSelectedDoctorSlots(selectedDoctor.availabilitySlots || []);
+        setDoctorAppointments([]);
+        setAvailabilityMessage(error.message || "Could not refresh live availability.");
+      }
+    };
+
+    loadBookingData();
+    const refreshTimer = window.setInterval(loadBookingData, 30000);
+
+    return () => {
+      isActive = false;
+      window.clearInterval(refreshTimer);
+    };
+  }, [selectedDoctor]);
+
+  const bookedSlotKeys = React.useMemo(() => {
+    return new Set(
+      doctorAppointments
+        .filter((appointment) => ["pending", "confirmed"].includes(String(appointment.status || "").toLowerCase()))
+        .map((appointment) => {
+          const date = new Date(appointment.appointmentDate);
+
+          if (Number.isNaN(date.getTime())) {
+            return "";
+          }
+
+          const dateKey = [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0"),
+            String(date.getDate()).padStart(2, "0")
+          ].join("-");
+          const timeKey = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+          return `${dateKey}T${timeKey}`;
+        })
+        .filter(Boolean)
+    );
+  }, [doctorAppointments]);
+
+  const slotMap = React.useMemo(() => {
+    if (!selectedDoctorSlots) {
       return new Map();
     }
 
-    return selectedDoctor.availabilitySlots.reduce((map, slot) => {
-      if (
-        slot?.isAvailable === false ||
-        !slot?.date ||
-        !slot?.startTime
-      ) {
+    return selectedDoctorSlots.reduce((map, slot) => {
+      if (!slot?.date || !slot?.startTime || !slot?.endTime) {
         return map;
       }
 
       const existing = map.get(slot.date) || [];
-      existing.push(slot.startTime);
-      existing.sort((left, right) => left.localeCompare(right));
+      const startMinutes = toMinutes(slot.startTime);
+      const endMinutes = toMinutes(slot.endTime);
+
+      if (
+        Number.isNaN(startMinutes) ||
+        Number.isNaN(endMinutes) ||
+        startMinutes >= endMinutes
+      ) {
+        return map;
+      }
+
+      for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+        const time = fromMinutes(minutes);
+        const key = `${slot.date}T${time}`;
+        existing.push({
+          key,
+          date: slot.date,
+          time,
+          endTime: slot.endTime,
+          note: slot.note || "",
+          isAvailable: slot.isAvailable !== false,
+          isBooked: bookedSlotKeys.has(key)
+        });
+      }
+
+      existing.sort((left, right) => left.time.localeCompare(right.time));
       map.set(slot.date, existing);
       return map;
     }, new Map());
-  }, [selectedDoctor]);
+  }, [selectedDoctorSlots, bookedSlotKeys]);
 
   const availableDates = React.useMemo(
-    () => Array.from(availableSlotMap.keys()).sort((left, right) => left.localeCompare(right)),
-    [availableSlotMap]
+    () => Array.from(slotMap.keys()).sort((left, right) => left.localeCompare(right)),
+    [slotMap]
   );
 
-  const availableTimes = React.useMemo(
-    () => (bookingForm.date ? availableSlotMap.get(bookingForm.date) || [] : []),
-    [availableSlotMap, bookingForm.date]
+  const slotsForSelectedDate = React.useMemo(
+    () => (bookingForm.date ? slotMap.get(bookingForm.date) || [] : []),
+    [slotMap, bookingForm.date]
+  );
+
+  const selectableSlots = React.useMemo(
+    () => slotsForSelectedDate.filter((slot) => slot.isAvailable && !slot.isBooked),
+    [slotsForSelectedDate]
   );
 
   useEffect(() => {
@@ -316,30 +453,35 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       return;
     }
 
-    const nextDate = availableDates[0] || "";
-    const nextTime = nextDate ? (availableSlotMap.get(nextDate) || [])[0] || "" : "";
-
     setBookingForm((current) => ({
       ...current,
-      date: nextDate,
-      time: nextTime
+      date: availableDates.includes(current.date) ? current.date : availableDates[0] || "",
+      time: (() => {
+        const nextDate = availableDates.includes(current.date) ? current.date : availableDates[0] || "";
+        const dateSlots = nextDate ? slotMap.get(nextDate) || [] : [];
+        const currentSlot = dateSlots.find(
+          (slot) => slot.time === current.time && slot.isAvailable && !slot.isBooked
+        );
+
+        return currentSlot?.time || dateSlots.find((slot) => slot.isAvailable && !slot.isBooked)?.time || "";
+      })()
     }));
-  }, [selectedDoctor, availableDates, availableSlotMap]);
+  }, [selectedDoctor, availableDates, slotMap]);
 
   useEffect(() => {
     if (!bookingForm.date) {
       return;
     }
 
-    if (availableTimes.length === 0) {
+    if (selectableSlots.length === 0) {
       setBookingForm((current) => ({ ...current, time: "" }));
       return;
     }
 
-    if (!availableTimes.includes(bookingForm.time)) {
-      setBookingForm((current) => ({ ...current, time: availableTimes[0] }));
+    if (!selectableSlots.some((slot) => slot.time === bookingForm.time)) {
+      setBookingForm((current) => ({ ...current, time: selectableSlots[0].time }));
     }
-  }, [availableTimes, bookingForm.date, bookingForm.time]);
+  }, [selectableSlots, bookingForm.date, bookingForm.time]);
 
   const clearStatus = () => {
     setAuthMessage("");
@@ -355,13 +497,22 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
   const openBooking = (doctor) => {
     setSelectedDoctor(doctor);
     setDoctorTab("specialization");
-    setBookingForm(emptyBookingForm);
+    setSelectedDoctorSlots(doctor.availabilitySlots || []);
+    setDoctorAppointments([]);
+    setAvailabilityMessage("");
+    setBookingForm({
+      ...emptyBookingForm,
+      ...buildProfilePrefill(authUser)
+    });
     setBookingMessage("");
   };
 
   const closeBooking = () => {
     setSelectedDoctor(null);
     setDoctorTab("specialization");
+    setSelectedDoctorSlots([]);
+    setDoctorAppointments([]);
+    setAvailabilityMessage("");
     setBookingForm(emptyBookingForm);
     setBookingMessage("");
   };
@@ -529,6 +680,19 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
   };
 
   const ensurePatient = async () => {
+    const authUserId = getUserId(authUser);
+    const authFullName = `${authUser?.firstName || ""} ${authUser?.lastName || ""}`.trim();
+    const isLoggedInPatient =
+      authUser?.role === "patient" &&
+      authUserId &&
+      bookingForm.fullName.trim().toLowerCase() === authFullName.toLowerCase() &&
+      bookingForm.email.trim().toLowerCase() === String(authUser.email || "").trim().toLowerCase() &&
+      bookingForm.phone.trim() === String(authUser.phone || "").trim();
+
+    if (isLoggedInPatient) {
+      return { ...authUser, _id: authUserId };
+    }
+
     const users = await fetchUsers();
     const normalizedEmail = bookingForm.email.trim().toLowerCase();
     const normalizedPhone = bookingForm.phone.trim();
@@ -590,6 +754,13 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       return;
     }
 
+    const selectedSlot = slotsForSelectedDate.find((slot) => slot.time === bookingForm.time);
+
+    if (!selectedSlot || !selectedSlot.isAvailable || selectedSlot.isBooked) {
+      setBookingMessage("Please choose an available, unbooked time slot.");
+      return;
+    }
+
     const appointmentDate = new Date(`${bookingForm.date}T${bookingForm.time}:00`);
 
     if (Number.isNaN(appointmentDate.getTime())) {
@@ -620,8 +791,15 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         ].join(" | ")
       });
 
+      const refreshedAppointments = await fetchAppointments({ doctor: selectedDoctor.backendId });
+      setDoctorAppointments(Array.isArray(refreshedAppointments) ? refreshedAppointments : []);
       setBookingMessage(response.message || "Appointment booked successfully.");
-      setBookingForm(emptyBookingForm);
+      setBookingForm({
+        ...emptyBookingForm,
+        ...buildProfilePrefill(authUser),
+        date: bookingForm.date,
+        time: ""
+      });
     } catch (error) {
       setBookingMessage(error.message);
     } finally {
@@ -759,6 +937,9 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
             <div className="appointment-panel">
               <h3>Book Appointment</h3>
+              <div className="appointment-fee" aria-live="polite">
+                Consultation Fee: Rs. {Number(selectedDoctor.consultationFee || 0).toLocaleString()}
+              </div>
 
               <form className="appointment-form" onSubmit={handleAppointmentSubmit}>
                 <label className="appointment-field">
@@ -840,43 +1021,62 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
                   />
                 </label>
 
-                <label className="appointment-field">
-                  <span>Pick a Date*</span>
-                  <select
-                    className="appointment-select appointment-select--green"
-                    value={bookingForm.date}
-                    onChange={(event) => updateBookingField("date", event.target.value)}
-                  >
-                    {availableDates.length > 0 ? (
-                      availableDates.map((dateValue) => (
-                        <option key={dateValue} value={dateValue}>
-                          {formatAvailabilityDate(dateValue)}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="">No dates available</option>
-                    )}
-                  </select>
-                </label>
+                <div className="appointment-slot-picker appointment-field--full">
+                  <div className="appointment-slot-picker__header">
+                    <span>Available Slots*</span>
+                    {availabilityMessage ? <small>{availabilityMessage}</small> : null}
+                  </div>
 
-                <label className="appointment-field">
-                  <span>Time*</span>
-                  <select
-                    className="appointment-select appointment-select--orange"
-                    value={bookingForm.time}
-                    onChange={(event) => updateBookingField("time", event.target.value)}
-                  >
-                    {availableTimes.length > 0 ? (
-                      availableTimes.map((timeValue) => (
-                        <option key={timeValue} value={timeValue}>
-                          {timeValue}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="">No times available</option>
-                    )}
-                  </select>
-                </label>
+                  {availableDates.length > 0 ? (
+                    <>
+                      <div className="appointment-day-list" role="tablist" aria-label="Available appointment days">
+                        {availableDates.map((dateValue) => (
+                          <button
+                            key={dateValue}
+                            type="button"
+                            role="tab"
+                            aria-selected={bookingForm.date === dateValue}
+                            className={bookingForm.date === dateValue ? "active" : ""}
+                            onClick={() => updateBookingField("date", dateValue)}
+                          >
+                            {formatAvailabilityDate(dateValue)}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="appointment-time-grid" aria-label="Available appointment times">
+                        {slotsForSelectedDate.length > 0 ? (
+                          slotsForSelectedDate.map((slot) => {
+                            const disabled = !slot.isAvailable || slot.isBooked;
+                            const isSelected = bookingForm.time === slot.time && !disabled;
+
+                            return (
+                              <button
+                                key={slot.key}
+                                type="button"
+                                className={[
+                                  "appointment-time-slot",
+                                  isSelected ? "active" : "",
+                                  disabled ? "disabled" : ""
+                                ].filter(Boolean).join(" ")}
+                                disabled={disabled}
+                                onClick={() => updateBookingField("time", slot.time)}
+                                title={slot.isBooked ? "Already booked" : slot.note || "Available"}
+                              >
+                                <strong>{formatTimeLabel(slot.time)}</strong>
+                                <span>{slot.isBooked ? "Booked" : slot.isAvailable ? "Available" : "Unavailable"}</span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <p className="appointment-slot-picker__empty">No times available for this day.</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="appointment-slot-picker__empty">No available dates have been published by this doctor.</p>
+                  )}
+                </div>
 
                 <label className="appointment-field appointment-field--full">
                   <span>Message</span>
