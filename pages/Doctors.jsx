@@ -27,68 +27,220 @@ const BackIcon = () => (
 
 const fallbackDoctorData = [
   {
-    name: "Dr. Aavash Shrestha",
-    field: "Anesthesiology",
-    specialization: "Chief Consultant in Anaesthesia and Critical Care",
-    qualification: "MBBS, MD (Anaesthesia), Fellowship in Critical Care",
-    availability: "Available for consultation today",
-    image: "img/Screenshot 2026-05-06 013524.png"
+    "name": "Dr. Aavash Shrestha",
+    "field": "Anesthesiology",
+    "specialization": "Chief Consultant in Anaesthesia and Critical Care",
+    "qualification": "MBBS, MD (Anaesthesia), Fellowship in Critical Care",
+    "availability": "Available for consultation today",
+    "image": "img/Screenshot 2026-05-06 013524.png"
   },
   {
-    name: "Dr. Kiran Thapa",
-    field: "Cardiology",
-    specialization: "Interventional Cardiologist and Heart Specialist",
-    qualification: "MBBS, MD (Internal Medicine), DM Cardiology",
-    availability: "Next slot: 4:30 PM",
-    image: "img/Screenshot 2026-05-06 013553.png"
+    "name": "Dr. Pratiksha Rana",
+    "field": "Anesthesiology",
+    "specialization": "Pain Management Specialist",
+    "qualification": "MBBS, MD (Anaesthesia)",
+    "availability": "Next slot: 10:00 AM",
+    "image": "img/IMG_6439.jpg"
   },
   {
-    name: "Dr. Neha Pradhan",
-    field: "Pediatrics",
-    specialization: "Child Health Specialist and Neonatal Care Expert",
-    qualification: "MBBS, MD Pediatrics, NICU Certification",
-    availability: "Accepting new patients",
-    image: "img/Screenshot 2026-04-29 230142.png"
+    "name": "Dr. Sandeep Basnet",
+    "field": "Anesthesiology",
+    "specialization": "Pediatric Anesthesiologist",
+    "qualification": "MBBS, MD (Anaesthesia)",
+    "availability": "Available tomorrow",
+    "image": "img/IMG_6481.jpg"
   },
   {
-    name: "Dr. Puja Maharjan",
-    field: "Dentist",
-    specialization: "Chief Consultant Surgeon for planned and urgent procedures",
-    qualification: "BDS, MDS, Fellowship in Restorative Dentistry",
-    availability: "Available for booking today",
-    image: "img/Screenshot 2026-04-29 230232.png"
+    "name": "Dr. Puja Maharjan",
+    "field": "Dentist",
+    "specialization": "Chief Consultant Surgeon for planned and urgent procedures",
+    "qualification": "BDS, MDS, Fellowship in Restorative Dentistry",
+    "availability": "Available for booking today",
+    "image": "img/Screenshot 2026-04-29 230232.png"
   },
   {
-    name: "Dr. Rajesh Sharma",
-    field: "Orthopedics",
-    specialization: "Bone, joint, and musculoskeletal treatment specialist",
-    qualification: "MBBS, MS Orthopedics, Fellowship in Sports Injury Care",
-    availability: "Next slot: 1:15 PM",
-    image: "img/Screenshot 2026-04-29 230051.png"
+    "name": "Dr. Suman Karki",
+    "field": "Dentist",
+    "specialization": "Orthodontist",
+    "qualification": "BDS, MDS (Orthodontics)",
+    "availability": "Next slot: 2:00 PM",
+    "image": "img/IMG_6482.jpg"
   },
   {
-    name: "Dr. Bishal Gurung",
-    field: "ENT",
-    specialization: "Ear, Nose, Throat and Head & Neck Surgery Specialist",
-    qualification: "MBBS, MS ENT",
-    availability: "Available this evening",
-    image: "img/Screenshot 2026-04-29 230104.png"
+    "name": "Dr. Anisha Shrestha",
+    "field": "Dentist",
+    "specialization": "Pediatric Dentist",
+    "qualification": "BDS, MDS (Pediatric Dentistry)",
+    "availability": "Available Thursday",
+    "image": "img/FullSizeRender.jpg"
   },
   {
-    name: "Dr. Nischal Joshi",
-    field: "Gynecologist",
-    specialization: "Senior Consultant Gynecologist and Obstetrician",
-    qualification: "MBBS, MD Obstetrics & Gynecology",
-    availability: "Consultation support all day",
-    image: "img/Screenshot 2026-04-29 230248.png"
+    "name": "Dr. Anil Bista",
+    "field": "Psychiatrist",
+    "specialization": "Mental Health and Behavioral Sciences Expert",
+    "qualification": "MBBS, MD Psychiatry",
+    "availability": "Available tomorrow morning",
+    "image": "img/Screenshot 2026-04-29 230035.png"
   },
   {
-    name: "Dr. Anil Bista",
-    field: "Psychiatrist",
-    specialization: "Mental Health and Behavioral Sciences Expert",
-    qualification: "MBBS, MD Psychiatry",
-    availability: "Available tomorrow morning",
-    image: "img/Screenshot 2026-04-29 230035.png"
+    "name": "Dr. Manisha Koirala",
+    "field": "Psychiatrist",
+    "specialization": "Child and Adolescent Psychiatrist",
+    "qualification": "MBBS, MD Psychiatry",
+    "availability": "Next slot: 1:30 PM",
+    "image": "img/image.png.jpeg"
+  },
+  {
+    "name": "Dr. Bikash Thapa",
+    "field": "Psychiatrist",
+    "specialization": "Addiction Psychiatrist",
+    "qualification": "MBBS, MD Psychiatry",
+    "availability": "Available next week",
+    "image": "img/Screenshot 2026-05-06 013524.png"
+  },
+  {
+    "name": "Dr. Nischal Joshi",
+    "field": "Gynecologist",
+    "specialization": "Senior Consultant Gynecologist and Obstetrician",
+    "qualification": "MBBS, MD Obstetrics & Gynecology",
+    "availability": "Consultation support all day",
+    "image": "img/Screenshot 2026-04-29 230248.png"
+  },
+  {
+    "name": "Dr. Sunita Sharma",
+    "field": "Gynecologist",
+    "specialization": "Reproductive Endocrinologist",
+    "qualification": "MBBS, MD Obstetrics & Gynecology",
+    "availability": "Next slot: 11:15 AM",
+    "image": "img/IMG_6439.jpg"
+  },
+  {
+    "name": "Dr. Roshni Rai",
+    "field": "Gynecologist",
+    "specialization": "Maternal-Fetal Medicine Specialist",
+    "qualification": "MBBS, MD Obstetrics & Gynecology",
+    "availability": "Available Wednesday",
+    "image": "img/IMG_6481.jpg"
+  },
+  {
+    "name": "Dr. Kiran Thapa",
+    "field": "Cardiology",
+    "specialization": "Interventional Cardiologist and Heart Specialist",
+    "qualification": "MBBS, MD (Internal Medicine), DM Cardiology",
+    "availability": "Next slot: 4:30 PM",
+    "image": "img/Screenshot 2026-05-06 013553.png"
+  },
+  {
+    "name": "Dr. Ramesh Pandey",
+    "field": "Cardiology",
+    "specialization": "Electrophysiologist",
+    "qualification": "MBBS, MD, DM Cardiology",
+    "availability": "Next slot: 9:00 AM",
+    "image": "img/IMG_6482.jpg"
+  },
+  {
+    "name": "Dr. Anjali Gurung",
+    "field": "Cardiology",
+    "specialization": "Non-Invasive Cardiologist",
+    "qualification": "MBBS, MD, Fellowship in Cardiology",
+    "availability": "Available tomorrow",
+    "image": "img/FullSizeRender.jpg"
+  },
+  {
+    "name": "Dr. Prakash Khatri",
+    "field": "Neurology",
+    "specialization": "Senior Consultant Neurologist",
+    "qualification": "MBBS, MD, DM Neurology",
+    "availability": "Next slot: 10:30 AM",
+    "image": "img/image.png.jpeg"
+  },
+  {
+    "name": "Dr. Nirmala Adhikari",
+    "field": "Neurology",
+    "specialization": "Epilepsy Specialist",
+    "qualification": "MBBS, MD, DM Neurology",
+    "availability": "Available Friday",
+    "image": "img/Screenshot 2026-04-29 230051.png"
+  },
+  {
+    "name": "Dr. Susan Maharjan",
+    "field": "Neurology",
+    "specialization": "Stroke Specialist",
+    "qualification": "MBBS, MD, Fellowship in Stroke",
+    "availability": "Next slot: 3:00 PM",
+    "image": "img/Screenshot 2026-04-29 230104.png"
+  },
+  {
+    "name": "Dr. Neha Pradhan",
+    "field": "Pediatrics",
+    "specialization": "Child Health Specialist and Neonatal Care Expert",
+    "qualification": "MBBS, MD Pediatrics, NICU Certification",
+    "availability": "Accepting new patients",
+    "image": "img/Screenshot 2026-04-29 230142.png"
+  },
+  {
+    "name": "Dr. Bimal Shrestha",
+    "field": "Pediatrics",
+    "specialization": "Pediatric Pulmonologist",
+    "qualification": "MBBS, MD Pediatrics",
+    "availability": "Next slot: 12:00 PM",
+    "image": "img/IMG_6439.jpg"
+  },
+  {
+    "name": "Dr. Karuna Thapa",
+    "field": "Pediatrics",
+    "specialization": "Pediatric Cardiologist",
+    "qualification": "MBBS, MD Pediatrics, Fellowship in Cardiology",
+    "availability": "Available Saturday",
+    "image": "img/IMG_6481.jpg"
+  },
+  {
+    "name": "Dr. Rajesh Sharma",
+    "field": "Orthopedics",
+    "specialization": "Bone, joint, and musculoskeletal treatment specialist",
+    "qualification": "MBBS, MS Orthopedics, Fellowship in Sports Injury Care",
+    "availability": "Next slot: 1:15 PM",
+    "image": "img/Screenshot 2026-04-29 230051.png"
+  },
+  {
+    "name": "Dr. Dinesh Karki",
+    "field": "Orthopedics",
+    "specialization": "Joint Replacement Surgeon",
+    "qualification": "MBBS, MS Orthopedics",
+    "availability": "Available tomorrow",
+    "image": "img/IMG_6482.jpg"
+  },
+  {
+    "name": "Dr. Smriti Joshi",
+    "field": "Orthopedics",
+    "specialization": "Pediatric Orthopedist",
+    "qualification": "MBBS, MS Orthopedics",
+    "availability": "Next slot: 10:45 AM",
+    "image": "img/FullSizeRender.jpg"
+  },
+  {
+    "name": "Dr. Bishal Gurung",
+    "field": "ENT",
+    "specialization": "Ear, Nose, Throat and Head & Neck Surgery Specialist",
+    "qualification": "MBBS, MS ENT",
+    "availability": "Available this evening",
+    "image": "img/Screenshot 2026-04-29 230104.png"
+  },
+  {
+    "name": "Dr. Asmita Rai",
+    "field": "ENT",
+    "specialization": "Rhinology Specialist",
+    "qualification": "MBBS, MS ENT",
+    "availability": "Next slot: 2:30 PM",
+    "image": "img/image.png.jpeg"
+  },
+  {
+    "name": "Dr. Suman Poudel",
+    "field": "ENT",
+    "specialization": "Otology Specialist",
+    "qualification": "MBBS, MS ENT",
+    "availability": "Available Monday",
+    "image": "img/Screenshot 2026-04-29 230232.png"
   }
 ];
 
@@ -871,16 +1023,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
               : undefined
         }
       >
-        {showDoctors && !selectedDoctor ? (
-          <button
-            type="button"
-            className="page-copy__back"
-            onClick={onBack}
-            aria-label="Go back"
-          >
-            <BackIcon />
-          </button>
-        ) : null}
+
         <p className="page-copy__eyebrow">{currentPage.eyebrow}</p>
         <h1>{currentPage.title}</h1>
         <p className="page-copy__description">{currentPage.description}</p>
@@ -1105,21 +1248,19 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
             {doctorsError ? (
               <p className="auth-card__message auth-card__message--error" style={{ margin: "0 0 6px" }}>{doctorsError}</p>
             ) : null}
-            <div className="doctor-search">
-              <label className="doctor-search__field">
-                <span>Search doctors</span>
-                <input
-                  type="search"
-                  placeholder="Search by doctor, department, or specialization"
-                  value={doctorSearch}
-                  onChange={(event) => setDoctorSearch(event.target.value)}
-                />
-              </label>
-              {doctorSearch.trim() ? (
-                <button type="button" className="doctor-search__clear" onClick={clearDoctorSearch}>
-                  Clear
-                </button>
-              ) : null}
+            <div style={{ position: "relative", width: "100%", maxWidth: "600px", margin: "20px 0 30px 0" }}>
+              <svg style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", color: "#e0f2fe" }} viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input
+                type="search"
+                placeholder="Search by doctor, department, or specialization..."
+                value={doctorSearch}
+                onChange={(event) => setDoctorSearch(event.target.value)}
+                style={{ width: "100%", padding: "16px 20px 16px 55px", borderRadius: "30px", border: "none", background: "#3b82f6", color: "white", outline: "none", fontSize: "16px", fontWeight: "500", boxShadow: "0 4px 15px rgba(59, 130, 246, 0.2)" }}
+              />
+              <style>{`
+                input[type="search"]::-webkit-search-cancel-button { display: none; }
+                input[type="search"]::placeholder { color: #bae6fd; opacity: 1; }
+              `}</style>
             </div>
             <div className="glass-backdrop">
               <div className="doctor-grid">
@@ -1146,15 +1287,6 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         )
       ) : showLogin ? (
         <div className="page-panel-shell">
-          <button
-            type="button"
-            className="page-copy__back"
-            onClick={onBack}
-            aria-label="Go back"
-          >
-            <BackIcon />
-          </button>
-
           <div
             className={`placeholder-panel auth-panel auth-panel--${loginView}`}
             style={{
@@ -1181,14 +1313,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         </div>
       ) : showDepartments ? (
         <div className="page-panel-shell">
-          <button
-            type="button"
-            className="page-copy__back"
-            onClick={onBack}
-            aria-label="Go back"
-          >
-            <BackIcon />
-          </button>
+
           <Departments onSelectDepartment={handleDepartmentSelect} />
         </div>
       ) : (

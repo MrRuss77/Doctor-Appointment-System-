@@ -35,6 +35,9 @@ const DepartmentsView = () => {
   const [feedback, setFeedback] = useState("");
   const [departments, setDepartments] = useState([]);
   const [busyId, setBusyId] = useState("");
+  const [modalState, setModalState] = useState({ isOpen: false, mode: "add", data: null });
+
+  const closeDepartmentModal = () => setModalState({ isOpen: false, mode: "add", data: null });
 
   const loadDepartments = async () => {
     const data = await fetchDepartments();
@@ -54,65 +57,51 @@ const DepartmentsView = () => {
     [departments]
   );
 
-  const handleAddDepartment = async () => {
-    const name = window.prompt("Enter department name");
-
-    if (!name || !name.trim()) {
-      return;
-    }
-
-    const description = window.prompt("Enter department description", "") || "";
-
-    setBusyId("create");
-    setFeedback("");
-
-    try {
-      const response = await createDepartment({
-        name: name.trim(),
-        description: description.trim()
-      });
-
-      setDepartments((current) => [response, ...current]);
-      setFeedback(response.message || "Department created successfully.");
-    } catch (error) {
-      setFeedback(error.message);
-    } finally {
-      setBusyId("");
-    }
+  const handleAddDepartment = () => {
+    setModalState({ isOpen: true, mode: "add", data: null });
   };
 
-  const handleEditDepartment = async (department) => {
-    const name = window.prompt("Edit department name", department.name || "");
-
-    if (!name || !name.trim()) {
-      return;
-    }
-
-    const description = window.prompt(
-      "Edit department description",
-      department.description || ""
-    );
-
-    setBusyId(department._id);
-    setFeedback("");
-
-    try {
-      const response = await updateDepartment(department._id, {
-        ...department,
-        name: name.trim(),
-        description: String(description || "").trim()
-      });
-
-      setDepartments((current) =>
-        current.map((item) => (item._id === department._id ? response : item))
-      );
-      setFeedback(response.message || "Department updated successfully.");
-    } catch (error) {
-      setFeedback(error.message);
-    } finally {
-      setBusyId("");
-    }
+  const handleEditDepartment = (department) => {
+    setModalState({ isOpen: true, mode: "edit", data: department });
   };
+
+  const handleSaveModal = async ({ name, description }) => {
+    if (!name || !name.trim()) return;
+
+    if (modalState.mode === "add") {
+      setBusyId("create");
+      setFeedback("");
+      try {
+        const response = await createDepartment({ name: name.trim(), description: description.trim() });
+        setDepartments((current) => [response, ...current]);
+        setFeedback(response.message || "Department created successfully.");
+      } catch (error) {
+        setFeedback(error.message);
+      } finally {
+        setBusyId("");
+      }
+    } else {
+      const department = modalState.data;
+      setBusyId(department._id);
+      setFeedback("");
+      try {
+        const response = await updateDepartment(department._id, {
+          ...department,
+          name: name.trim(),
+          description: description.trim()
+        });
+        setDepartments((current) => current.map((item) => (item._id === department._id ? response : item)));
+        setFeedback(response.message || "Department updated successfully.");
+      } catch (error) {
+        setFeedback(error.message);
+      } finally {
+        setBusyId("");
+      }
+    }
+    closeDepartmentModal();
+  };
+
+
 
   const handleDeleteDepartment = async (department) => {
     const confirmed = window.confirm(`Delete ${department.name}?`);
@@ -196,6 +185,52 @@ const DepartmentsView = () => {
           </div>
         ))}
       </div>
+
+      {modalState.isOpen && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="modal-content" style={{ background: 'white', borderRadius: '24px', width: '450px', padding: '32px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', position: 'relative' }}>
+            <h3 style={{ marginTop: 0, marginBottom: '24px', fontSize: '20px', color: '#10233d', fontWeight: '800' }}>
+              {modalState.mode === "add" ? "Add Department" : "Edit Department"}
+            </h3>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: '#334155' }}>Department Name</label>
+              <input
+                type="text"
+                className="admin-input"
+                defaultValue={modalState.data?.name || ""}
+                id="modal-dept-name"
+                autoFocus
+              />
+            </div>
+            
+            <div style={{ marginBottom: '28px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: '#334155' }}>Description</label>
+              <textarea
+                className="admin-input"
+                defaultValue={modalState.data?.description || ""}
+                id="modal-dept-desc"
+                style={{ minHeight: '100px', resize: 'vertical', paddingTop: '12px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="admin-btn-pill" onClick={closeDepartmentModal} style={{ background: '#f1f5f9', color: '#475569' }}>
+                Cancel
+              </button>
+              <button 
+                className="admin-btn-primary" 
+                onClick={() => handleSaveModal({ 
+                  name: document.getElementById('modal-dept-name').value,
+                  description: document.getElementById('modal-dept-desc').value 
+                })}
+              >
+                Save Department
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

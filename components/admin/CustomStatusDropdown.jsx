@@ -8,7 +8,7 @@ export const STATUS_OPTIONS = [
   { value: "completed", label: "Completed" }
 ];
 
-const CustomStatusDropdown = ({ value, onChange, disabled, compact }) => {
+const CustomStatusDropdown = ({ value, onChange, disabled, compact, options, filterPending = true }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -22,7 +22,8 @@ const CustomStatusDropdown = ({ value, onChange, disabled, compact }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const currentOption = STATUS_OPTIONS.find((opt) => opt.value === value) || { value, label: "Pending" };
+  const currentOptions = options || STATUS_OPTIONS;
+  const currentOption = currentOptions.find((opt) => opt.value === value) || { value, label: "Pending" };
 
   return (
     <div
@@ -38,7 +39,7 @@ const CustomStatusDropdown = ({ value, onChange, disabled, compact }) => {
       </div>
       {isOpen && (
         <div className="custom-dropdown-menu">
-          {STATUS_OPTIONS.filter(opt => opt.value !== "pending").map((option) => (
+          {(filterPending && !options ? currentOptions.filter(opt => opt.value !== "pending") : currentOptions).map((option) => (
             <div
               key={option.value}
               className={`custom-dropdown-item ${option.value === value ? "selected" : ""}`}

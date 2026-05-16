@@ -114,9 +114,9 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
   };
 
   return (
-    <div className="doctor-dashboard-shell">
-      <div className="doctor-page">
-        <aside className="doctor-sidebar">
+    <div className="admin-dashboard-shell">
+      <div className="admin-page">
+        <aside className="admin-sidebar">
           <div className="doctor-workspace-header">
             <span className="doctor-workspace-title">DOCTOR WORKSPACE</span>
             <h1 className="doctor-panel-title">Doctor Panel</h1>
@@ -171,7 +171,7 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
           </nav>
         </aside>
 
-        <main className="doctor-main-content">
+        <main className="admin-main-content">
           {renderContent()}
         </main>
       </div>

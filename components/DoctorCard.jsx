@@ -33,6 +33,10 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
   const [tab, setTab] = useState("specialization");
   const [imageSrc, setImageSrc] = useState(doctor.image || createFallbackAvatar(doctor.name));
 
+  React.useEffect(() => {
+    setImageSrc(doctor.image || createFallbackAvatar(doctor.name));
+  }, [doctor.image, doctor.name]);
+
   return (
     <article className="doctor-card">
       <div className="doctor-card__top">
@@ -58,7 +62,7 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
             >
               Book an appointment
             </button>
-            <span className="doctor-card__meta">Patient-ready profile</span>
+
           </div>
         </div>
       </div>

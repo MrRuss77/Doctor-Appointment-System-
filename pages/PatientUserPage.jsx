@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { fetchAppointments, updateAppointment } from "../src/api/client";
+import CustomStatusDropdown from "../components/admin/CustomStatusDropdown";
 
 const formatAppointmentDate = (value) => {
   const date = new Date(value);
@@ -209,14 +210,19 @@ function PatientUserPage({ authUser }) {
             <div className="patient-history-toolbar">
               <label className="patient-history-filter">
                 <span>Status</span>
-                <select value={historyFilter} onChange={(event) => setHistoryFilter(event.target.value)}>
-                  <option value="all">All</option>
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="completed">Completed</option>
-                </select>
+                <CustomStatusDropdown
+                  value={historyFilter}
+                  onChange={(val) => setHistoryFilter(val)}
+                  options={[
+                    { value: "all", label: "ALL" },
+                    { value: "pending", label: "PENDING" },
+                    { value: "confirmed", label: "CONFIRMED" },
+                    { value: "cancelled", label: "CANCELLED" },
+                    { value: "rejected", label: "REJECTED" },
+                    { value: "completed", label: "COMPLETED" }
+                  ]}
+                  filterPending={false}
+                />
               </label>
             </div>
 

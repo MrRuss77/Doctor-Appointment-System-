@@ -68,9 +68,15 @@ function Home({ onNavigate, authUser, welcomeName }) {
   const handleActionClick = (action) => {
     setActiveAction(action.label);
 
-    if (action.page === "admin" && authUser?.role !== "admin") {
-      onNavigate?.("login");
-      return;
+    if (action.page === "admin") {
+      if (authUser?.role === "doctor") {
+        onNavigate?.("doctor");
+        return;
+      }
+      if (authUser?.role !== "admin") {
+        onNavigate?.("login");
+        return;
+      }
     }
 
     onNavigate?.(action.page);

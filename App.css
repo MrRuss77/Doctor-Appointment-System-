@@ -823,9 +823,9 @@ video {
 
 .doctor-search__field input {
   width: 100%;
-  min-height: 48px;
+  min-height: 40px;
   border: 1px solid rgba(76, 116, 194, 0.16);
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--ink);
   padding: 0 16px;
@@ -840,10 +840,10 @@ video {
 }
 
 .doctor-search__clear {
-  min-height: 48px;
+  min-height: 40px;
   padding: 0 16px;
   border: 1px solid rgba(76, 116, 194, 0.16);
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.74);
   color: #3468c8;
   font-weight: 800;
@@ -2302,11 +2302,13 @@ video {
   text-align: left;
   padding: 0 12px;
   font-weight: 800;
+  transition: all 0.2s ease;
 }
 
 .profile-dropdown button:hover,
 .profile-dropdown button:focus-visible {
-  background: rgba(95, 141, 255, 0.1);
+  background: #3b82f6;
+  color: #ffffff;
   outline: none;
 }
 
@@ -2359,7 +2361,7 @@ video {
   font-size: 14px;
   color: #374151;
   line-height: 1.6;
-  margin: 0 0 10px;
+  margin: 0;
 }
 
 .mdc-footer__contact-email {
@@ -2367,7 +2369,7 @@ video {
   color: #06b6d4;
   text-decoration: none;
   font-size: 14px;
-  margin-top: 2px;
+  margin: 0;
 }
 
 .mdc-footer__contact-email:hover {
@@ -2377,7 +2379,7 @@ video {
 .mdc-footer__social {
   display: flex;
   gap: 10px;
-  margin-top: 18px;
+  margin: 0;
 }
 
 .mdc-footer__social-btn {
@@ -2428,16 +2430,23 @@ video {
   outline: none;
 }
 
+.mdc-footer__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mdc-footer__form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .mdc-footer__form-label {
   display: block;
   font-size: 13px;
   color: #374151;
-  margin-bottom: 5px;
-  margin-top: 14px;
-}
-
-.mdc-footer__form-label:first-of-type {
-  margin-top: 0;
+  margin: 0;
 }
 
 .mdc-footer__required {
@@ -2491,7 +2500,7 @@ video {
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  margin-top: 16px;
+  margin: 0;
   transition: background 0.18s ease, transform 0.18s ease;
 }
 

@@ -31,6 +31,37 @@ const formatTime = (value) => {
   });
 };
 
+const FilterDropdown = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const options = [
+    { value: "all", label: "All" },
+    { value: "pending", label: "Pending" },
+    { value: "confirmed", label: "Confirmed" },
+    { value: "cancelled", label: "Cancelled" },
+    { value: "rejected", label: "Rejected" },
+    { value: "completed", label: "Completed" }
+  ];
+  const currentOption = options.find((opt) => opt.value === value) || options[0];
+
+  return (
+    <div className={`admin-status-dropdown ${isOpen ? "open" : ""}`} onClick={() => setIsOpen(!isOpen)} style={{ minWidth: '130px', background: 'white' }}>
+      <div className="custom-dropdown-trigger">
+        {currentOption.label}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      {isOpen && (
+        <div className="custom-dropdown-menu">
+          {options.map((option) => (
+            <div key={option.value} className={`custom-dropdown-item ${option.value === value ? "selected" : ""}`} onClick={() => onChange(option.value)}>
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AppointmentsView = () => {
   const [appointments, setAppointments] = useState([]);
   const [busyId, setBusyId] = useState("");
@@ -128,18 +159,7 @@ const AppointmentsView = () => {
         </div>
         <label className="admin-toolbar-filter">
           <span>Status Filter</span>
-          <select
-            className="admin-select"
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="rejected">Rejected</option>
-            <option value="completed">Completed</option>
-          </select>
+          <FilterDropdown value={statusFilter} onChange={setStatusFilter} />
         </label>
       </div>
 
@@ -180,8 +200,8 @@ const AppointmentsView = () => {
         <div className="manage-list-header manage-list-header--appointments">
           <div className="col-name font-bold">Patient</div>
           <div className="col-specialty font-bold">Doctor</div>
-          <div className="col-patients font-bold">Date & Time</div>
-          <div className="col-name font-bold">Status</div>
+          <div className="col-specialty font-bold">Date & Time</div>
+          <div className="col-status font-bold">Status</div>
           <div className="col-actions text-right font-bold">Actions</div>
         </div>
 
@@ -199,12 +219,13 @@ const AppointmentsView = () => {
                   <div className="manage-primary">{appointment.doctor?.fullName || "Unknown doctor"}</div>
                   <div className="manage-secondary">{appointment.department?.name || "No department"}</div>
                 </div>
-                <div className="col-patients">
+                <div className="col-specialty">
                   <div className="manage-primary">{formatDate(appointment.appointmentDate)}</div>
                   <div className="manage-secondary">{formatTime(appointment.appointmentDate)}</div>
                 </div>
-                <div className="col-name col-status">
+                <div className="col-status">
                   <CustomStatusDropdown
+                    compact
                     value={String(appointment.status || "pending").toLowerCase()}
                     onChange={(nextStatus) => handleStatusChange(appointment._id, nextStatus)}
                     disabled={busyId === appointment._id}

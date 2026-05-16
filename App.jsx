@@ -7,6 +7,7 @@ import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientUserPage from "./pages/PatientUserPage";
 import Footer from "./components/Footer";
 import MediCareChat from "./src/components/MediCareChat";
+import FloatingBackButton from "./components/FloatingBackButton";
 import "./App.css";
 
 function App() {
@@ -114,6 +115,10 @@ function App() {
         onNavigate={handleNavigate}
         authUser={authUser}
         onLogout={requestLogout}
+      />
+      <FloatingBackButton 
+        onBack={handleBack} 
+        show={previousPages.length > 0} 
       />
 
       <main

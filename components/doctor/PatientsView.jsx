@@ -152,97 +152,90 @@ const PatientsView = ({ authUser, doctorProfile }) => {
     <div className="patients-view">
       <h2 className="doctor-view-title">Patient List</h2>
       
-      <div className="patients-table-container">
-        <table className="patients-table">
-          <colgroup>
-            <col className="patients-col-patient" />
-            <col className="patients-col-age" />
-            <col className="patients-col-gender" />
-            <col className="patients-col-blood" />
-            <col className="patients-col-actions" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Patient</th>
-              <th>Age</th>
-              <th>Gender</th>
-              <th>Blood Group</th>
-              <th className="actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {patients.length > 0 ? (
-              patients.map((pt) => (
-                <tr key={pt.id}>
-                  <td>{pt.name}</td>
-                  <td>{pt.age}</td>
-                  <td>{pt.gender}</td>
-                  <td>{pt.bloodGroup}</td>
-                  <td className="actions">
-                    <div className="patient-actions-menu">
-                      <button
-                        type="button"
-                        className="patient-actions-menu__trigger"
-                        aria-haspopup="menu"
-                        aria-expanded={openMenuId === pt.id}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setOpenMenuId((current) => (current === pt.id ? "" : pt.id));
-                        }}
-                      >
-                        Actions
-                        <span className="patient-actions-menu__chevron" aria-hidden="true">▾</span>
-                      </button>
+      <div className="manage-list-card">
+        <div className="manage-list-header manage-list-header--appointments">
+          <div className="col-name font-bold">Patient</div>
+          <div className="col-specialty font-bold">Age & Gender</div>
+          <div className="col-patients font-bold">Blood Group</div>
+          <div className="col-actions text-right font-bold">Actions</div>
+        </div>
+        <div className="manage-list-body">
+          {patients.length > 0 ? (
+            patients.map((pt) => (
+              <div key={pt.id} className="manage-list-row manage-list-row--stackable">
+                <div className="col-name">
+                  <div className="manage-primary">{pt.name}</div>
+                </div>
+                <div className="col-specialty">
+                  <div className="manage-primary">{pt.age}</div>
+                  <div className="manage-secondary">{pt.gender}</div>
+                </div>
+                <div className="col-patients">
+                  <div className="manage-primary">{pt.bloodGroup}</div>
+                </div>
+                <div className="col-actions col-actions--responsive">
+                  <div className="patient-actions-menu">
+                    <button
+                      type="button"
+                      className="patient-actions-menu__trigger"
+                      aria-haspopup="menu"
+                      aria-expanded={openMenuId === pt.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setOpenMenuId((current) => (current === pt.id ? "" : pt.id));
+                      }}
+                    >
+                      Actions
+                      <span className="patient-actions-menu__chevron" aria-hidden="true">▾</span>
+                    </button>
 
-                      {openMenuId === pt.id ? (
-                        <div
-                          className="patient-actions-menu__dropdown"
-                          role="menu"
-                          onClick={(event) => event.stopPropagation()}
+                    {openMenuId === pt.id ? (
+                      <div
+                        className="patient-actions-menu__dropdown"
+                        role="menu"
+                        onClick={(event) => event.stopPropagation()}
+                        style={{ right: 0 }}
+                      >
+                        <button
+                          type="button"
+                          className="patient-actions-menu__item"
+                          onClick={() => {
+                            setSelectedPatient(pt);
+                            setOpenMenuId("");
+                          }}
                         >
-                          <button
-                            type="button"
-                            className="patient-actions-menu__item"
-                            onClick={() => {
-                              setSelectedPatient(pt);
-                              setOpenMenuId("");
-                            }}
-                          >
-                            View Details
-                          </button>
-                          <button
-                            type="button"
-                            className="patient-actions-menu__item"
-                            onClick={async () => {
-                              await copyPatientDetail(pt.phone);
-                              setOpenMenuId("");
-                            }}
-                          >
-                            Copy Phone
-                          </button>
-                          <button
-                            type="button"
-                            className="patient-actions-menu__item"
-                            onClick={async () => {
-                              await copyPatientDetail(pt.email);
-                              setOpenMenuId("");
-                            }}
-                          >
-                            Copy Email
-                          </button>
-                        </div>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="5" className="doctor-empty-cell">No patients available for this doctor yet.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                          View Details
+                        </button>
+                        <button
+                          type="button"
+                          className="patient-actions-menu__item"
+                          onClick={async () => {
+                            await copyPatientDetail(pt.phone);
+                            setOpenMenuId("");
+                          }}
+                        >
+                          Copy Phone
+                        </button>
+                        <button
+                          type="button"
+                          className="patient-actions-menu__item"
+                          onClick={async () => {
+                            await copyPatientDetail(pt.email);
+                            setOpenMenuId("");
+                          }}
+                        >
+                          Copy Email
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="admin-empty-state">No patients available for this doctor yet.</p>
+          )}
+        </div>
       </div>
 
       {selectedPatient && <PatientDetailsModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} />}

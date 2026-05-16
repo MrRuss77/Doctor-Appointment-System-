@@ -82,62 +82,64 @@ function Footer({ onNavigate }) {
           <div>
             <h3 className="mdc-footer__col-heading">Contact Us:</h3>
 
-            <p className="mdc-footer__contact-line">
-              +977 9810101010
-              <br />
-              01-51416161
-            </p>
+            <div className="mdc-footer__stack">
+              <p className="mdc-footer__contact-line">
+                +977 9810101010
+                <br />
+                01-51416161
+              </p>
 
-            <p className="mdc-footer__contact-line">P.O. Box 11234</p>
-            <p className="mdc-footer__contact-line">Naxal, Kathmandu, Nepal</p>
-
-            <a
-              href="mailto:info@medicarehospital.com"
-              className="mdc-footer__contact-email"
-            >
-              info@medicarehospital.com
-            </a>
-
-            <div className="mdc-footer__social">
-              <a
-                href="https://www.facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mdc-footer__social-btn"
-                aria-label="Facebook"
-              >
-                <FacebookIcon />
-              </a>
+              <p className="mdc-footer__contact-line">P.O. Box 11234</p>
+              <p className="mdc-footer__contact-line">Naxal, Kathmandu, Nepal</p>
 
               <a
-                href="https://www.medicare.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mdc-footer__social-btn"
-                aria-label="Website"
+                href="mailto:info@medicarehospital.com"
+                className="mdc-footer__contact-email"
               >
-                <GlobeIcon />
+                info@medicarehospital.com
               </a>
 
-              <a
-                href="https://www.instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mdc-footer__social-btn"
-                aria-label="Instagram"
-              >
-                <InstagramIcon />
-              </a>
+              <div className="mdc-footer__social">
+                <a
+                  href="https://www.facebook.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mdc-footer__social-btn"
+                  aria-label="Facebook"
+                >
+                  <FacebookIcon />
+                </a>
 
-              <a
-                href="https://www.youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mdc-footer__social-btn"
-                aria-label="YouTube"
-              >
-                <YoutubeIcon />
-              </a>
+                <a
+                  href="https://www.medicare.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mdc-footer__social-btn"
+                  aria-label="Website"
+                >
+                  <GlobeIcon />
+                </a>
+
+                <a
+                  href="https://www.instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mdc-footer__social-btn"
+                  aria-label="Instagram"
+                >
+                  <InstagramIcon />
+                </a>
+
+                <a
+                  href="https://www.youtube.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mdc-footer__social-btn"
+                  aria-label="YouTube"
+                >
+                  <YoutubeIcon />
+                </a>
+              </div>
             </div>
           </div>
 
@@ -220,33 +222,39 @@ function Footer({ onNavigate }) {
           <form onSubmit={handleSubmit}>
             <h3 className="mdc-footer__col-heading">Feedback Form</h3>
 
-            <label className="mdc-footer__form-label">
-              Full Name<span className="mdc-footer__required">*</span>
-            </label>
-            <input name="fullName" type="text" className="mdc-footer__input" />
-
-            <div className="mdc-footer__form-row">
-              <div>
+            <div className="mdc-footer__stack">
+              <div className="mdc-footer__form-group">
                 <label className="mdc-footer__form-label">
-                  Phone Number<span className="mdc-footer__required">*</span>
+                  Full Name<span className="mdc-footer__required">*</span>
                 </label>
-                <input name="phone" type="tel" className="mdc-footer__input" />
+                <input name="fullName" type="text" className="mdc-footer__input" />
               </div>
 
-              <div>
-                <label className="mdc-footer__form-label">Email</label>
-                <input name="email" type="email" className="mdc-footer__input" />
+              <div className="mdc-footer__form-row">
+                <div className="mdc-footer__form-group">
+                  <label className="mdc-footer__form-label">
+                    Phone Number<span className="mdc-footer__required">*</span>
+                  </label>
+                  <input name="phone" type="tel" className="mdc-footer__input" />
+                </div>
+
+                <div className="mdc-footer__form-group">
+                  <label className="mdc-footer__form-label">Email</label>
+                  <input name="email" type="email" className="mdc-footer__input" />
+                </div>
               </div>
+
+              <div className="mdc-footer__form-group">
+                <label className="mdc-footer__form-label">
+                  Message<span className="mdc-footer__required">*</span>
+                </label>
+                <textarea name="message" className="mdc-footer__textarea" rows={3} />
+              </div>
+
+              <button type="submit" className="mdc-footer__submit">
+                Submit
+              </button>
             </div>
-
-            <label className="mdc-footer__form-label">
-              Message<span className="mdc-footer__required">*</span>
-            </label>
-            <textarea name="message" className="mdc-footer__textarea" rows={3} />
-
-            <button type="submit" className="mdc-footer__submit">
-              Submit
-            </button>
           </form>
         </div>
       </div>
