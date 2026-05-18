@@ -57,6 +57,10 @@ const YoutubeIcon = () => (
 );
 
 function Footer({ onNavigate }) {
+  const navigateTo = (page, options) => {
+    onNavigate?.(page, options);
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
 
@@ -181,7 +185,7 @@ function Footer({ onNavigate }) {
                 <button
                   type="button"
                   className="mdc-footer__link-btn"
-                  onClick={() => onNavigate?.("home")}
+                  onClick={() => navigateTo("home")}
                 >
                   Home
                 </button>
@@ -191,7 +195,7 @@ function Footer({ onNavigate }) {
                 <button
                   type="button"
                   className="mdc-footer__link-btn"
-                  onClick={() => onNavigate?.("doctors")}
+                  onClick={() => navigateTo("doctors")}
                 >
                   Doctors
                 </button>
@@ -201,7 +205,7 @@ function Footer({ onNavigate }) {
                 <button
                   type="button"
                   className="mdc-footer__link-btn"
-                  onClick={() => onNavigate?.("departments")}
+                  onClick={() => navigateTo("departments")}
                 >
                   Departments
                 </button>
@@ -211,7 +215,7 @@ function Footer({ onNavigate }) {
                 <button
                   type="button"
                   className="mdc-footer__link-btn"
-                  onClick={() => onNavigate?.("doctors")}
+                  onClick={() => navigateTo("doctors")}
                 >
                   Book Appointment
                 </button>
@@ -227,7 +231,7 @@ function Footer({ onNavigate }) {
                 <label className="mdc-footer__form-label">
                   Full Name<span className="mdc-footer__required">*</span>
                 </label>
-                <input name="fullName" type="text" className="mdc-footer__input" />
+                <input name="fullName" type="text" className="mdc-footer__input" required />
               </div>
 
               <div className="mdc-footer__form-row">
@@ -235,7 +239,7 @@ function Footer({ onNavigate }) {
                   <label className="mdc-footer__form-label">
                     Phone Number<span className="mdc-footer__required">*</span>
                   </label>
-                  <input name="phone" type="tel" className="mdc-footer__input" />
+                  <input name="phone" type="tel" className="mdc-footer__input" required />
                 </div>
 
                 <div className="mdc-footer__form-group">
@@ -248,7 +252,7 @@ function Footer({ onNavigate }) {
                 <label className="mdc-footer__form-label">
                   Message<span className="mdc-footer__required">*</span>
                 </label>
-                <textarea name="message" className="mdc-footer__textarea" rows={3} />
+                <textarea name="message" className="mdc-footer__textarea" rows={3} required />
               </div>
 
               <button type="submit" className="mdc-footer__submit">

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { hashPassword, isPasswordHash } from "../utils/password.js";
 import { isValidEmail, isValidPhone } from "../utils/validators.js";
 
 const userSchema = new mongoose.Schema(
@@ -68,6 +69,16 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+const removeSensitiveFields = (_document, returnedObject) => {
+  delete returnedObject.password;
+  delete returnedObject.resetOtp;
+  delete returnedObject.resetOtpExpiresAt;
+  return returnedObject;
+};
+
+userSchema.set("toJSON", { transform: removeSensitiveFields });
+userSchema.set("toObject", { transform: removeSensitiveFields });
+
 userSchema.path("firstName").validate(
   (value) => value && value.trim().length >= 2,
   "First name must be at least 2 characters long."
@@ -77,6 +88,35 @@ userSchema.path("lastName").validate(
   (value) => value && value.trim().length >= 2,
   "Last name must be at least 2 characters long."
 );
+
+userSchema.pre("save", function hashPasswordBeforeSave(next) {
+  if (this.isModified("password") && this.password && !isPasswordHash(this.password)) {
+    this.password = hashPassword(this.password);
+  }
+
+  next();
+});
+
+userSchema.pre("findOneAndUpdate", function hashPasswordBeforeUpdate(next) {
+  const update = this.getUpdate() || {};
+  const nextPassword = update.password || update.$set?.password;
+
+  if (nextPassword && !isPasswordHash(nextPassword)) {
+    const hashedPassword = hashPassword(nextPassword);
+
+    if (update.password) {
+      update.password = hashedPassword;
+    }
+
+    if (update.$set?.password) {
+      update.$set.password = hashedPassword;
+    }
+
+    this.setUpdate(update);
+  }
+
+  next();
+});
 
 const User = mongoose.model("User", userSchema);
 

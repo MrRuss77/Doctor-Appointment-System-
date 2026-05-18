@@ -68,6 +68,9 @@ function App() {
 
     setActivePage(page);
     setDoctorFilter(page === "doctors" ? options.department || "" : "");
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: options.instant ? "auto" : "smooth" });
+    });
   };
 
   const handleBack = () => {

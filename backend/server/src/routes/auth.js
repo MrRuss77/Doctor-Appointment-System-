@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import { sendOTPEmail } from "../utils/mailer.js";
 import { generateOTP, hashOTP } from "../utils/otp.js";
+import { hashPassword, isPasswordHash, verifyPassword } from "../utils/password.js";
 import { isValidEmail, isValidPhone } from "../utils/validators.js";
 
 const router = express.Router();
@@ -56,8 +57,13 @@ router.post("/login", async (req, res, next) => {
 
     const user = await User.findOne({ email: normalizeEmail(email) });
 
-    if (!user || user.password !== password) {
+    if (!user || !verifyPassword(password, user.password)) {
       return res.status(401).json({ success: false, message: "Invalid email or password." });
+    }
+
+    if (!isPasswordHash(user.password)) {
+      user.password = hashPassword(password);
+      await user.save();
     }
 
     return sendSuccess(res, {
