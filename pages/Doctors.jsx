@@ -430,8 +430,24 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
           setDoctorsError("");
           setDoctors(doctorRecords.map(mapDoctorRecord));
         } else {
-          setDoctors([]);
-          setDoctorsError(doctorSearch.trim() ? "" : "No doctors found yet.");
+          const normalizedSearch = doctorSearch.trim().toLowerCase();
+          const fallbackDoctors = normalizedSearch
+            ? fallbackDoctorData.filter((doctor) =>
+                [
+                  doctor.name,
+                  doctor.field,
+                  doctor.specialization,
+                  doctor.qualification,
+                  doctor.availability
+                ]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(normalizedSearch)
+              )
+            : fallbackDoctorData;
+
+          setDoctors(fallbackDoctors);
+          setDoctorsError(doctorSearch.trim() && fallbackDoctors.length === 0 ? "No doctors found." : "No doctors found in database. Showing sample doctors from catalog instead.");
         }
       } catch (error) {
         if (!isActive) {

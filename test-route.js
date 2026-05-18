@@ -32,7 +32,7 @@ const run = async () => {
         mongoose.disconnect();
       }
     });
-  } catch(e) {
+  } catch (e) {
     console.error("Setup Error:", e);
   }
 }

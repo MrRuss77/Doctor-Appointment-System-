@@ -1,7 +1,12 @@
 import express from "express";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 import Appointment from "../models/Appointment.js";
 import Department from "../models/Department.js";
 import Doctor from "../models/Doctor.js";
+import User from "../models/User.js";
+import { doctorDefaultPassword } from "../data/catalog.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import {
@@ -13,6 +18,146 @@ import {
 import HttpError from "../utils/httpError.js";
 
 const router = express.Router();
+const routeDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRootDir = path.resolve(routeDir, "../../..");
+const doctorUploadDir = path.join(projectRootDir, "public", "uploads", "doctors");
+const allowedImageMimeTypes = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"]
+]);
+
+const parseDoctorName = (fullName = "") => {
+  const cleanName = String(fullName).replace(/^Dr\.\s*/i, "").trim();
+  const parts = cleanName.split(/\s+/).filter(Boolean);
+
+  return {
+    firstName: parts[0] || "Doctor",
+    lastName: parts.slice(1).join(" ") || "User"
+  };
+};
+
+const saveDoctorImage = async (imageDataUrl, fullName) => {
+  if (!imageDataUrl) {
+    return "";
+  }
+
+  const match = String(imageDataUrl).match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+
+  if (!match) {
+    throw new HttpError(400, "Doctor photo must be a JPG, PNG, or WebP image.");
+  }
+
+  const [, mimeType, base64Data] = match;
+  const extension = allowedImageMimeTypes.get(mimeType);
+  const imageBuffer = Buffer.from(base64Data, "base64");
+
+  if (imageBuffer.length > 4 * 1024 * 1024) {
+    throw new HttpError(400, "Doctor photo must be smaller than 4MB.");
+  }
+
+  await fs.mkdir(doctorUploadDir, { recursive: true });
+
+  const safeName = String(fullName || "doctor")
+    .toLowerCase()
+    .replace(/^dr\.\s*/i, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "doctor";
+  const fileName = `${Date.now()}-${safeName}.${extension}`;
+
+  await fs.writeFile(path.join(doctorUploadDir, fileName), imageBuffer);
+
+  return `/uploads/doctors/${fileName}`;
+};
+
+const deleteUploadedDoctorImage = async (imagePath) => {
+  if (!imagePath || !String(imagePath).startsWith("/uploads/doctors/")) {
+    return;
+  }
+
+  const fileName = path.basename(imagePath);
+
+  try {
+    await fs.unlink(path.join(doctorUploadDir, fileName));
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+};
+
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const resolveDepartmentId = async ({ department, departmentName }) => {
+  if (department) {
+    return department;
+  }
+
+  if (!departmentName) {
+    throw new HttpError(400, "Doctor department is required.");
+  }
+
+  const departmentRecord = await Department.findOne({
+    name: new RegExp(`^${escapeRegex(String(departmentName).trim())}$`, "i")
+  });
+
+  if (!departmentRecord) {
+    throw new HttpError(400, "Selected department does not exist.");
+  }
+
+  return departmentRecord._id;
+};
+
+const buildDoctorPayload = async (body) => {
+  const fullName = String(body.fullName || "").trim();
+  const email = String(body.email || "").trim().toLowerCase();
+  const phone = String(body.phone || "").trim();
+  const specialization = String(body.specialization || "").trim();
+
+  if (!fullName || !email || !phone || !specialization) {
+    throw new HttpError(400, "Name, email, phone, and specialization are required.");
+  }
+
+  const department = await resolveDepartmentId(body);
+  const savedImage = await saveDoctorImage(body.imageDataUrl, fullName);
+
+  return {
+    fullName,
+    email,
+    phone,
+    department,
+    specialization,
+    qualification: String(body.qualification || "").trim(),
+    experienceYears: Number(body.experienceYears || 0),
+    availabilityText: String(body.availabilityText || "No availability added yet").trim(),
+    image: savedImage || String(body.image || "").trim(),
+    consultationFee: Number(body.consultationFee || 0),
+    isActive: body.isActive !== false
+  };
+};
+
+const findOrCreateDoctorUser = async ({ fullName, email, phone }) => {
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    if (existingUser.role !== "doctor") {
+      throw new HttpError(409, "A non-doctor user already exists with this email.");
+    }
+
+    existingUser.phone = phone;
+    await existingUser.save();
+    return existingUser;
+  }
+
+  return User.create({
+    ...parseDoctorName(fullName),
+    email,
+    phone,
+    password: doctorDefaultPassword,
+    role: "doctor"
+  });
+};
 
 const serializeDoctor = (doctorDocument) => {
   const doctor = doctorDocument.toObject ? doctorDocument.toObject() : doctorDocument;
@@ -260,11 +405,22 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-    const doctor = await Doctor.create(req.body);
+    const doctorPayload = await buildDoctorPayload(req.body || {});
+    const existingDoctor = await Doctor.findOne({ email: doctorPayload.email });
+
+    if (existingDoctor) {
+      throw new HttpError(409, "A doctor already exists with this email.");
+    }
+
+    const user = await findOrCreateDoctorUser(doctorPayload);
+    const doctor = await Doctor.create({
+      ...doctorPayload,
+      user: user._id
+    });
     const populatedDoctor = await Doctor.findById(doctor._id).populate("department").populate("user");
     sendSuccess(res, {
       status: 201,
-      message: "Doctor created successfully.",
+      message: `Doctor created successfully. Default password: ${doctorDefaultPassword}`,
       data: serializeDoctor(populatedDoctor)
     });
   })
@@ -312,6 +468,15 @@ router.delete(
     }
 
     await Doctor.deleteOne({ _id: doctor._id });
+    await deleteUploadedDoctorImage(doctor.image);
+
+    if (doctor.user) {
+      const linkedDoctorCount = await Doctor.countDocuments({ user: doctor.user });
+
+      if (linkedDoctorCount === 0) {
+        await User.deleteOne({ _id: doctor.user, role: "doctor" });
+      }
+    }
 
     sendSuccess(res, { message: "Doctor deleted successfully." });
   })

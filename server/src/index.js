@@ -1,11 +1,11 @@
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
 import connectDatabase from "./config/db.js";
+import { loadEnv } from "./config/env.js";
 import errorHandler from "./middleware/errorHandler.js";
 import router from "./routes/index.js";
 
-dotenv.config();
+loadEnv();
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -32,7 +32,7 @@ app.use(
     }
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "6mb" }));
 
 app.use("/api", router);
 app.use(errorHandler);

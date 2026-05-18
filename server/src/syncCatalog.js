@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
 import connectDatabase from "./config/db.js";
+import { loadEnv } from "./config/env.js";
 import {
   departmentCatalog,
   doctorCatalog,
@@ -32,7 +32,7 @@ const upsertUserAccount = async ({ email, password, ...profile }) => {
   return existingUser;
 };
 
-dotenv.config();
+loadEnv();
 
 const syncCatalog = async () => {
   try {

@@ -41,6 +41,8 @@ GMAIL_APP_PASSWORD=your-app-password
 GROQ_API_KEY=your-groq-api-key
 ```
 
+The backend reads the project root `.env` for all server commands.
+
 ### Team Atlas setup
 
 Each teammate must do both:

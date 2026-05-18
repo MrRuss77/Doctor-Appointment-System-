@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
 import connectDatabase from "./config/db.js";
+import { loadEnv } from "./config/env.js";
 import Appointment from "./models/Appointment.js";
 import {
   departmentCatalog,
@@ -12,7 +12,7 @@ import Doctor from "./models/Doctor.js";
 import Registration from "./models/Registration.js";
 import User from "./models/User.js";
 
-dotenv.config();
+loadEnv();
 
 const seedDatabase = async () => {
   try {
