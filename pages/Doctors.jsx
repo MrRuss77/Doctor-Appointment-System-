@@ -18,6 +18,18 @@ import {
   verifyOtpCode
 } from "../src/api/client";
 
+const createFallbackAvatar = (name = "Doctor") =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+      <rect width="240" height="240" rx="36" fill="#dbeafe" />
+      <circle cx="120" cy="88" r="42" fill="#ffffff" />
+      <path d="M56 194c12-28 35-46 64-46s52 18 64 46" fill="#ffffff" />
+      <text x="120" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#31508f">
+        ${String(name).replace(/^Dr\.\s*/i, "").trim().slice(0, 1).toUpperCase() || "D"}
+      </text>
+    </svg>
+  `)}`;
+
 const BackIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block' }}>
     <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -1055,8 +1067,12 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
             <div className="doctor-booking__top">
               <img
                 className="doctor-booking__image"
-                src={selectedDoctor.image}
+                src={selectedDoctor.image || createFallbackAvatar(selectedDoctor.name)}
                 alt={selectedDoctor.name}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = createFallbackAvatar(selectedDoctor.name);
+                }}
               />
 
               <div className="doctor-booking__header">

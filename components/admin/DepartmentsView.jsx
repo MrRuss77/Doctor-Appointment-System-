@@ -5,6 +5,7 @@ import {
   fetchDepartments,
   updateDepartment
 } from "../../src/api/client";
+import ConfirmDialog from "../ConfirmDialog";
 
 import anesthesiologyImg from "../departments/Anesthiology.png";
 import dentistImg from "../departments/dentist.png.png";
@@ -36,6 +37,7 @@ const DepartmentsView = () => {
   const [departments, setDepartments] = useState([]);
   const [busyId, setBusyId] = useState("");
   const [modalState, setModalState] = useState({ isOpen: false, mode: "add", data: null });
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const closeDepartmentModal = () => setModalState({ isOpen: false, mode: "add", data: null });
 
@@ -103,19 +105,26 @@ const DepartmentsView = () => {
 
 
 
-  const handleDeleteDepartment = async (department) => {
-    const confirmed = window.confirm(`Delete ${department.name}?`);
-
-    if (!confirmed) {
+  const closeDeleteDialog = () => {
+    if (busyId) {
       return;
     }
 
-    setBusyId(department._id);
+    setDeleteTarget(null);
+  };
+
+  const handleDeleteDepartment = async () => {
+    if (!deleteTarget?._id) {
+      return;
+    }
+
+    setBusyId(deleteTarget._id);
     setFeedback("");
 
     try {
-      const response = await deleteDepartment(department._id);
-      setDepartments((current) => current.filter((item) => item._id !== department._id));
+      const response = await deleteDepartment(deleteTarget._id);
+      setDepartments((current) => current.filter((item) => item._id !== deleteTarget._id));
+      setDeleteTarget(null);
       setFeedback(response.message || "Department deleted successfully.");
     } catch (error) {
       setFeedback(error.message);
@@ -164,7 +173,7 @@ const DepartmentsView = () => {
                 <button
                   type="button"
                   className="dept-action-btn dept-action-btn--delete"
-                  onClick={() => handleDeleteDepartment(dept)}
+                  onClick={() => setDeleteTarget(dept)}
                   title="Delete"
                   disabled={busyId === dept._id}
                 >
@@ -231,9 +240,25 @@ const DepartmentsView = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        eyebrow="Department record"
+        title="Delete this department?"
+        message={
+          deleteTarget
+            ? `This will remove ${deleteTarget.name}. If doctors or active appointments still depend on this department, the backend will stop the deletion.`
+            : ""
+        }
+        confirmLabel="Delete Department"
+        cancelLabel="Cancel"
+        confirmTone="danger"
+        onCancel={closeDeleteDialog}
+        onConfirm={handleDeleteDepartment}
+        busy={busyId === deleteTarget?._id}
+      />
     </div>
   );
 };
 
 export default DepartmentsView;
-

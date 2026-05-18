@@ -26,7 +26,7 @@ const formatDateTime = (value) => {
   });
 };
 
-const DashboardView = () => {
+const DashboardView = ({ onOpenManageDoctors }) => {
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -201,7 +201,16 @@ const DashboardView = () => {
       <div className="dashboard-section">
         <div className="dashboard-section__header">
           <h3>Doctors on Duty</h3>
-          <span>Active specialists</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span>Active specialists</span>
+            <button
+              type="button"
+              className="admin-btn-pill green"
+              onClick={() => onOpenManageDoctors?.()}
+            >
+              Add Doctor
+            </button>
+          </div>
         </div>
         <div className="activity-list">
           {doctorsOnDuty.length > 0 ? (

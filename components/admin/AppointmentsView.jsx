@@ -4,6 +4,7 @@ import {
   fetchAppointments,
   respondToAppointment
 } from "../../src/api/client";
+import ConfirmDialog from "../ConfirmDialog";
 import CustomStatusDropdown, { STATUS_OPTIONS } from "./CustomStatusDropdown";
 
 const formatDate = (value) => {
@@ -67,6 +68,7 @@ const AppointmentsView = () => {
   const [busyId, setBusyId] = useState("");
   const [feedback, setFeedback] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadAppointments = async () => {
     const data = await fetchAppointments();
@@ -129,19 +131,26 @@ const AppointmentsView = () => {
     }
   };
 
-  const handleDelete = async (appointmentId) => {
-    const confirmed = window.confirm("Delete this appointment?");
-
-    if (!confirmed) {
+  const closeDeleteDialog = () => {
+    if (busyId) {
       return;
     }
 
-    setBusyId(appointmentId);
+    setDeleteTarget(null);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget?._id) {
+      return;
+    }
+
+    setBusyId(deleteTarget._id);
     setFeedback("");
 
     try {
-      const response = await deleteAppointment(appointmentId);
-      setAppointments((current) => current.filter((item) => item._id !== appointmentId));
+      const response = await deleteAppointment(deleteTarget._id);
+      setAppointments((current) => current.filter((item) => item._id !== deleteTarget._id));
+      setDeleteTarget(null);
       setFeedback(response.message || "Appointment deleted successfully.");
     } catch (error) {
       setFeedback(error.message);
@@ -235,7 +244,7 @@ const AppointmentsView = () => {
                   <button
                     type="button"
                     className="admin-btn-pill red"
-                    onClick={() => handleDelete(appointment._id)}
+                    onClick={() => setDeleteTarget(appointment)}
                     disabled={busyId === appointment._id}
                   >
                     Delete
@@ -248,6 +257,23 @@ const AppointmentsView = () => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        eyebrow="Appointment record"
+        title="Delete this appointment?"
+        message={
+          deleteTarget
+            ? `This will permanently remove the booking for ${deleteTarget.patient?.firstName || "the patient"} with ${deleteTarget.doctor?.fullName || "the selected doctor"}.`
+            : ""
+        }
+        confirmLabel="Delete Appointment"
+        cancelLabel="Cancel"
+        confirmTone="danger"
+        onCancel={closeDeleteDialog}
+        onConfirm={handleDelete}
+        busy={busyId === deleteTarget?._id}
+      />
     </div>
   );
 };

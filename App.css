@@ -374,6 +374,18 @@ video {
   box-shadow: 0 16px 24px rgba(56, 96, 181, 0.18);
 }
 
+.logout-dialog__confirm--danger {
+  background: linear-gradient(135deg, #f97373, #ec4899);
+  color: #fff;
+  box-shadow: 0 16px 24px rgba(236, 72, 153, 0.22);
+}
+
+.logout-dialog__confirm--neutral {
+  background: linear-gradient(135deg, #5f8dff, #15c5b6);
+  color: #fff;
+  box-shadow: 0 16px 24px rgba(56, 96, 181, 0.18);
+}
+
 .page-section,
 .home-page,
 .admin-dashboard {

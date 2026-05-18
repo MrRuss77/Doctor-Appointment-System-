@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import Appointment from "../models/Appointment.js";
 import Department from "../models/Department.js";
 import Doctor from "../models/Doctor.js";
+import DoctorImage from "../models/DoctorImage.js";
 import User from "../models/User.js";
 import { doctorDefaultPassword } from "../data/catalog.js";
 import { sendSuccess } from "../utils/apiResponse.js";
@@ -39,7 +40,7 @@ const parseDoctorName = (fullName = "") => {
 
 const saveDoctorImage = async (imageDataUrl, fullName) => {
   if (!imageDataUrl) {
-    return "";
+    return null;
   }
 
   const match = String(imageDataUrl).match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
@@ -56,8 +57,6 @@ const saveDoctorImage = async (imageDataUrl, fullName) => {
     throw new HttpError(400, "Doctor photo must be smaller than 4MB.");
   }
 
-  await fs.mkdir(doctorUploadDir, { recursive: true });
-
   const safeName = String(fullName || "doctor")
     .toLowerCase()
     .replace(/^dr\.\s*/i, "")
@@ -66,9 +65,12 @@ const saveDoctorImage = async (imageDataUrl, fullName) => {
     .slice(0, 48) || "doctor";
   const fileName = `${Date.now()}-${safeName}.${extension}`;
 
-  await fs.writeFile(path.join(doctorUploadDir, fileName), imageBuffer);
-
-  return `/uploads/doctors/${fileName}`;
+  return DoctorImage.create({
+    mimeType,
+    fileName,
+    data: imageBuffer,
+    size: imageBuffer.length
+  });
 };
 
 const deleteUploadedDoctorImage = async (imagePath) => {
@@ -85,6 +87,14 @@ const deleteUploadedDoctorImage = async (imagePath) => {
       throw error;
     }
   }
+};
+
+const deleteDoctorPhotoAsset = async (assetId) => {
+  if (!assetId) {
+    return;
+  }
+
+  await DoctorImage.deleteOne({ _id: assetId });
 };
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -131,13 +141,14 @@ const buildDoctorPayload = async (body) => {
     qualification: String(body.qualification || "").trim(),
     experienceYears: Number(body.experienceYears || 0),
     availabilityText: String(body.availabilityText || "No availability added yet").trim(),
-    image: savedImage || String(body.image || "").trim(),
+    image: savedImage ? "" : String(body.image || "").trim(),
+    photoAsset: savedImage?._id || undefined,
     consultationFee: Number(body.consultationFee || 0),
     isActive: body.isActive !== false
   };
 };
 
-const findOrCreateDoctorUser = async ({ fullName, email, phone }) => {
+const findOrCreateDoctorUser = async ({ fullName, email, phone, password }) => {
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
@@ -145,19 +156,33 @@ const findOrCreateDoctorUser = async ({ fullName, email, phone }) => {
       throw new HttpError(409, "A non-doctor user already exists with this email.");
     }
 
+    const { firstName, lastName } = parseDoctorName(fullName);
+    existingUser.firstName = firstName;
+    existingUser.lastName = lastName;
     existingUser.phone = phone;
     await existingUser.save();
-    return existingUser;
+    return {
+      user: existingUser,
+      wasCreated: false
+    };
   }
 
-  return User.create({
+  const user = await User.create({
     ...parseDoctorName(fullName),
     email,
     phone,
-    password: doctorDefaultPassword,
+    password: password || doctorDefaultPassword,
     role: "doctor"
   });
+
+  return {
+    user,
+    wasCreated: true
+  };
 };
+
+const buildDoctorImagePath = (doctor) =>
+  doctor?.photoAsset ? `/api/doctors/${doctor._id}/photo` : doctor?.image || "";
 
 const serializeDoctor = (doctorDocument) => {
   const doctor = doctorDocument.toObject ? doctorDocument.toObject() : doctorDocument;
@@ -165,6 +190,7 @@ const serializeDoctor = (doctorDocument) => {
 
   return {
     ...doctor,
+    image: buildDoctorImagePath(doctor),
     availabilitySlots,
     availabilityText:
       availabilitySlots.length > 0
@@ -220,6 +246,57 @@ router.get(
   asyncHandler(async (_req, res) => {
     const doctors = await Doctor.find().populate("department").populate("user").sort({ createdAt: -1 });
     res.json(doctors.map(serializeDoctor));
+  })
+);
+
+router.get(
+  "/:id/photo",
+  asyncHandler(async (req, res) => {
+    const doctor = await Doctor.findById(req.params.id).select("photoAsset image fullName");
+
+    if (!doctor) {
+      throw new HttpError(404, "Doctor not found.");
+    }
+
+    if (doctor.photoAsset) {
+      const photoAsset = await DoctorImage.findById(doctor.photoAsset);
+
+      if (!photoAsset) {
+        throw new HttpError(404, "Doctor photo not found.");
+      }
+
+      res.setHeader("Content-Type", photoAsset.mimeType);
+      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.send(photoAsset.data);
+      return;
+    }
+
+    if (doctor.image && String(doctor.image).startsWith("/uploads/doctors/")) {
+      const fileName = path.basename(doctor.image);
+      const filePath = path.join(doctorUploadDir, fileName);
+
+      try {
+        const fileBuffer = await fs.readFile(filePath);
+        const extension = path.extname(fileName).toLowerCase();
+        const mimeType =
+          extension === ".png"
+            ? "image/png"
+            : extension === ".webp"
+              ? "image/webp"
+              : "image/jpeg";
+
+        res.setHeader("Content-Type", mimeType);
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.send(fileBuffer);
+        return;
+      } catch (error) {
+        if (error.code !== "ENOENT") {
+          throw error;
+        }
+      }
+    }
+
+    throw new HttpError(404, "Doctor photo not found.");
   })
 );
 
@@ -412,15 +489,37 @@ router.post(
       throw new HttpError(409, "A doctor already exists with this email.");
     }
 
-    const user = await findOrCreateDoctorUser(doctorPayload);
-    const doctor = await Doctor.create({
+    const { user, wasCreated } = await findOrCreateDoctorUser({
       ...doctorPayload,
-      user: user._id
+      password: String(req.body?.password || "").trim()
     });
+
+    let doctor;
+
+    try {
+      doctor = await Doctor.create({
+        ...doctorPayload,
+        user: user._id
+      });
+    } catch (error) {
+      if (!doctorPayload.photoAsset) {
+        throw error;
+      }
+
+      await deleteDoctorPhotoAsset(doctorPayload.photoAsset);
+      throw error;
+    }
+
     const populatedDoctor = await Doctor.findById(doctor._id).populate("department").populate("user");
+    const passwordMessage = req.body?.password
+      ? "Doctor created successfully."
+      : wasCreated
+        ? `Doctor created successfully. Default password: ${doctorDefaultPassword}`
+        : "Doctor created successfully and linked to the existing doctor login account.";
+
     sendSuccess(res, {
       status: 201,
-      message: `Doctor created successfully. Default password: ${doctorDefaultPassword}`,
+      message: passwordMessage,
       data: serializeDoctor(populatedDoctor)
     });
   })
@@ -469,6 +568,7 @@ router.delete(
 
     await Doctor.deleteOne({ _id: doctor._id });
     await deleteUploadedDoctorImage(doctor.image);
+    await deleteDoctorPhotoAsset(doctor.photoAsset);
 
     if (doctor.user) {
       const linkedDoctorCount = await Doctor.countDocuments({ user: doctor.user });

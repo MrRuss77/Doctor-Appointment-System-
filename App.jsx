@@ -8,6 +8,7 @@ import PatientUserPage from "./pages/PatientUserPage";
 import Footer from "./components/Footer";
 import MediCareChat from "./src/components/MediCareChat";
 import FloatingBackButton from "./components/FloatingBackButton";
+import ConfirmDialog from "./components/ConfirmDialog";
 import "./App.css";
 
 function App() {
@@ -163,41 +164,17 @@ function App() {
 
       {!isLoginPage && <Footer onNavigate={handleNavigate} />}
 
-      {showLogoutConfirm && (
-        <div className="logout-dialog" role="presentation">
-          <div
-            className="logout-dialog__panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-dialog-title"
-          >
-            <p className="logout-dialog__eyebrow">Account session</p>
-            <h2 id="logout-dialog-title">Confirm logout?</h2>
-            <p className="logout-dialog__text">
-              You will be returned to the home page and need to sign in again to
-              access your portal.
-            </p>
-
-            <div className="logout-dialog__actions">
-              <button
-                type="button"
-                className="logout-dialog__cancel"
-                onClick={cancelLogout}
-              >
-                Stay logged in
-              </button>
-
-              <button
-                type="button"
-                className="logout-dialog__confirm"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        eyebrow="Account session"
+        title="Confirm logout?"
+        message="You will be returned to the home page and need to sign in again to access your portal."
+        confirmLabel="Logout"
+        cancelLabel="Stay logged in"
+        confirmTone="neutral"
+        onCancel={cancelLogout}
+        onConfirm={handleLogout}
+      />
 
       <MediCareChat />
     </div>

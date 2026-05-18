@@ -16,7 +16,7 @@ const AdminDashboard = ({ authUser, onLogout, onBack }) => {
   const renderContent = () => {
     switch (activeMenu) {
       case "Dashboard":
-        return <DashboardView />;
+        return <DashboardView onOpenManageDoctors={() => setActiveMenu("Manage Doctors")} />;
       case "Manage Doctors":
         return <ManageDoctorsView />;
       case "Departments":

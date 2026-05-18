@@ -5,6 +5,18 @@ import DoctorAppointmentsView from "../components/doctor/DoctorAppointmentsView"
 import { fetchDoctors } from "../src/api/client";
 import "../components/doctor/doctor.css";
 
+const createFallbackAvatar = (name = "Doctor") =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+      <rect width="200" height="200" rx="32" fill="#d8e4ff" />
+      <circle cx="100" cy="72" r="30" fill="#ffffff" />
+      <path d="M48 160c12-32 33-48 52-48s40 16 52 48" fill="#ffffff" />
+      <text x="100" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#31508f">
+        ${String(name).replace(/^Dr\.\s*/i, "").trim().charAt(0).toUpperCase() || "D"}
+      </text>
+    </svg>
+  `)}`;
+
 const fallbackDoctorIdentity = {
   name: "Doctor",
   specialty: "Specialist",
@@ -129,6 +141,10 @@ const DoctorDashboard = ({ authUser, onLogout }) => {
                   className="doctor-profile-card__image"
                   src={doctorImage}
                   alt={doctorName}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = createFallbackAvatar(doctorName);
+                  }}
                 />
               ) : (
                 <div className="doctor-profile-card__image doctor-profile-card__image--placeholder" aria-hidden="true">

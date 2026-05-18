@@ -109,6 +109,10 @@ const doctorSchema = new mongoose.Schema(
       trim: true,
       maxlength: [300, "Image path cannot be longer than 300 characters."]
     },
+    photoAsset: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DoctorImage"
+    },
     consultationFee: {
       type: Number,
       min: [0, "Consultation fee cannot be negative."],

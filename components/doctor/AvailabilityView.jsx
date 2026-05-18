@@ -6,6 +6,7 @@ import {
   updateDoctorAvailabilitySlot
 } from "../../src/api/client";
 import { AddAvailabilityModal } from "./DoctorModals";
+import ConfirmDialog from "../ConfirmDialog";
 
 const AvailabilityDropdown = ({ value, onChange, disabled }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -127,6 +128,7 @@ const AvailabilityView = ({ doctorProfile }) => {
   const [editingDayId, setEditingDayId] = useState(null);
   const [feedback, setFeedback] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState("");
 
   const doctorId = doctorProfile?._id || "";
 
@@ -209,24 +211,31 @@ const AvailabilityView = ({ doctorProfile }) => {
     }
   };
 
-  const handleDeleteSlot = async (slotId) => {
+  const closeDeleteDialog = () => {
+    if (busyId) {
+      return;
+    }
+
+    setDeleteTarget("");
+  };
+
+  const handleDeleteSlot = async () => {
     if (!doctorId) {
       setFeedback("Doctor profile is not linked yet.");
       return;
     }
 
-    const confirmed = window.confirm("Remove this availability slot?");
-
-    if (!confirmed) {
+    if (!deleteTarget) {
       return;
     }
 
-    setBusyId(slotId);
+    setBusyId(deleteTarget);
     setFeedback("");
 
     try {
-      const response = await deleteDoctorAvailabilitySlot(doctorId, slotId);
+      const response = await deleteDoctorAvailabilitySlot(doctorId, deleteTarget);
       setFeedback(response.message || "Availability removed successfully.");
+      setDeleteTarget("");
       await loadAvailability();
     } catch (error) {
       setFeedback(error.message);
@@ -280,7 +289,7 @@ const AvailabilityView = ({ doctorProfile }) => {
                           <button
                             type="button"
                             className="doctor-card-action doctor-card-action--cancel"
-                            onClick={() => handleDeleteSlot(slotId)}
+                            onClick={() => setDeleteTarget(slotId)}
                             disabled={isBusy}
                           >
                             {isBusy ? "Working..." : "Delete"}
@@ -309,9 +318,21 @@ const AvailabilityView = ({ doctorProfile }) => {
           busy={Boolean(busyId)}
         />
       ) : null}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        eyebrow="Availability slot"
+        title="Delete this slot?"
+        message="This will remove the selected availability slot from the doctor's schedule."
+        confirmLabel="Delete Slot"
+        cancelLabel="Cancel"
+        confirmTone="danger"
+        onCancel={closeDeleteDialog}
+        onConfirm={handleDeleteSlot}
+        busy={busyId === deleteTarget}
+      />
     </div>
   );
 };
 
 export default AvailabilityView;
-

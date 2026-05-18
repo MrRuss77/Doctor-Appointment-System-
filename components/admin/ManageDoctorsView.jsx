@@ -6,6 +6,19 @@ import {
   fetchDoctors,
   updateDoctor
 } from "../../src/api/client";
+import ConfirmDialog from "../ConfirmDialog";
+
+const createFallbackAvatar = (name = "Doctor") =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+      <rect width="120" height="120" rx="24" fill="#e2e8f0" />
+      <circle cx="60" cy="42" r="18" fill="#ffffff" />
+      <path d="M28 94c8-20 23-30 32-30s24 10 32 30" fill="#ffffff" />
+      <text x="60" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#31508f">
+        ${String(name).trim().charAt(0).toUpperCase() || "D"}
+      </text>
+    </svg>
+  `)}`;
 
 const emptyDoctorForm = {
   fullName: "",
@@ -31,6 +44,7 @@ const ManageDoctorsView = () => {
   const [openMenuId, setOpenMenuId] = useState("");
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [newDoctor, setNewDoctor] = useState(emptyDoctorForm);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadDoctors = async () => {
     const data = await fetchDoctors();
@@ -219,20 +233,27 @@ const ManageDoctorsView = () => {
     }
   };
 
-  const handleDelete = async (doctorId) => {
-    const confirmed = window.confirm("Delete this doctor?");
-
-    if (!confirmed) {
+  const closeDeleteDialog = () => {
+    if (busyId) {
       return;
     }
 
-    setBusyId(doctorId);
+    setDeleteTarget(null);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget?._id) {
+      return;
+    }
+
+    setBusyId(deleteTarget._id);
     setFeedback("");
 
     try {
-      const response = await deleteDoctor(doctorId);
-      setDoctors((current) => current.filter((doctor) => doctor._id !== doctorId));
+      const response = await deleteDoctor(deleteTarget._id);
+      setDoctors((current) => current.filter((doctor) => doctor._id !== deleteTarget._id));
       setOpenMenuId("");
+      setDeleteTarget(null);
       setFeedback(response.message || "Doctor deleted successfully.");
     } catch (error) {
       setFeedback(error.message);
@@ -427,7 +448,15 @@ const ManageDoctorsView = () => {
                     ) : (
                       <div className="manage-doctor-cell">
                         {doctor.image ? (
-                          <img className="manage-doctor-avatar" src={doctor.image} alt={doctor.fullName} />
+                          <img
+                            className="manage-doctor-avatar"
+                            src={doctor.image}
+                            alt={doctor.fullName}
+                            onError={(event) => {
+                              event.currentTarget.onerror = null;
+                              event.currentTarget.src = createFallbackAvatar(doctor.fullName);
+                            }}
+                          />
                         ) : (
                           <span className="manage-doctor-avatar manage-doctor-avatar--initial">
                             {doctor.fullName?.charAt(0)?.toUpperCase() || "D"}
@@ -541,7 +570,10 @@ const ManageDoctorsView = () => {
                             <button
                               type="button"
                               className="admin-actions-menu__item admin-actions-menu__item--danger"
-                              onClick={() => handleDelete(doctor._id)}
+                              onClick={() => {
+                                setDeleteTarget(doctor);
+                                setOpenMenuId("");
+                              }}
                             >
                               Delete Doctor
                             </button>
@@ -558,6 +590,23 @@ const ManageDoctorsView = () => {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        eyebrow="Doctor record"
+        title="Delete this doctor?"
+        message={
+          deleteTarget
+            ? `This will remove ${deleteTarget.fullName} from the doctors list. The action will be blocked if this doctor still has active appointments.`
+            : ""
+        }
+        confirmLabel="Delete Doctor"
+        cancelLabel="Cancel"
+        confirmTone="danger"
+        onCancel={closeDeleteDialog}
+        onConfirm={handleDelete}
+        busy={busyId === deleteTarget?._id}
+      />
     </div>
   );
 };
