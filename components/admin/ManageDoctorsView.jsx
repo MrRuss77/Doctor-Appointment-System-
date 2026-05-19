@@ -27,6 +27,7 @@ const emptyDoctorForm = {
   department: "",
   specialization: "",
   qualification: "",
+  nmcNumber: "",
   experienceYears: "",
   availabilityText: "",
   consultationFee: "",
@@ -45,6 +46,8 @@ const ManageDoctorsView = () => {
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [newDoctor, setNewDoctor] = useState(emptyDoctorForm);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [showAddSuccess, setShowAddSuccess] = useState(false);
 
   const loadDoctors = async () => {
     const data = await fetchDoctors();
@@ -79,6 +82,7 @@ const ManageDoctorsView = () => {
       [doctor._id]: {
         fullName: doctor.fullName,
         specialization: doctor.specialization,
+        nmcNumber: doctor.nmcNumber || "",
         consultationFee: doctor.consultationFee || ""
       }
     }));
@@ -187,6 +191,7 @@ const ManageDoctorsView = () => {
         department: newDoctor.department,
         specialization: newDoctor.specialization.trim(),
         qualification: newDoctor.qualification.trim(),
+        nmcNumber: newDoctor.nmcNumber.trim(),
         experienceYears: newDoctor.experienceYears ? Number(newDoctor.experienceYears) : 0,
         availabilityText: newDoctor.availabilityText.trim(),
         consultationFee: newDoctor.consultationFee ? Number(newDoctor.consultationFee) : 0,
@@ -196,6 +201,7 @@ const ManageDoctorsView = () => {
       setDoctors((current) => [createdDoctor, ...current]);
       resetAddForm();
       setFeedback(createdDoctor.message || "Doctor created successfully.");
+      setShowAddSuccess(true);
     } catch (error) {
       setFeedback(error.message);
     } finally {
@@ -217,6 +223,7 @@ const ManageDoctorsView = () => {
         ...doctor,
         fullName: draft.fullName.trim(),
         specialization: draft.specialization.trim(),
+        nmcNumber: String(draft.nmcNumber || "").trim(),
         consultationFee: draft.consultationFee ? Number(draft.consultationFee) : 0
       });
 
@@ -239,6 +246,7 @@ const ManageDoctorsView = () => {
     }
 
     setDeleteTarget(null);
+    setDeleteError("");
   };
 
   const handleDelete = async () => {
@@ -248,6 +256,7 @@ const ManageDoctorsView = () => {
 
     setBusyId(deleteTarget._id);
     setFeedback("");
+    setDeleteError("");
 
     try {
       const response = await deleteDoctor(deleteTarget._id);
@@ -256,7 +265,7 @@ const ManageDoctorsView = () => {
       setDeleteTarget(null);
       setFeedback(response.message || "Doctor deleted successfully.");
     } catch (error) {
-      setFeedback(error.message);
+      setDeleteError(error.message);
     } finally {
       setBusyId("");
     }
@@ -351,6 +360,15 @@ const ManageDoctorsView = () => {
                 value={newDoctor.specialization}
                 onChange={(event) => handleNewDoctorChange("specialization", event.target.value)}
                 placeholder="Senior Consultant Cardiologist"
+              />
+            </label>
+            <label className="admin-field">
+              <span>NMC Number</span>
+              <input
+                className="admin-input"
+                value={newDoctor.nmcNumber}
+                onChange={(event) => handleNewDoctorChange("nmcNumber", event.target.value)}
+                placeholder="NMC-12345"
               />
             </label>
             <label className="admin-field">
@@ -471,13 +489,23 @@ const ManageDoctorsView = () => {
                   </div>
                   <div className="col-specialty">
                     {isEditing ? (
-                      <input
-                        className="admin-input"
-                        value={draft.specialization || ""}
-                        onChange={(event) =>
-                          handleDraftChange(doctor._id, "specialization", event.target.value)
-                        }
-                      />
+                      <div className="manage-edit-stack">
+                        <input
+                          className="admin-input"
+                          value={draft.specialization || ""}
+                          onChange={(event) =>
+                            handleDraftChange(doctor._id, "specialization", event.target.value)
+                          }
+                        />
+                        <input
+                          className="admin-input"
+                          value={draft.nmcNumber || ""}
+                          onChange={(event) =>
+                            handleDraftChange(doctor._id, "nmcNumber", event.target.value)
+                          }
+                          placeholder="NMC Number"
+                        />
+                      </div>
                     ) : (
                       <div className="manage-primary">{doctor.specialization}</div>
                     )}
@@ -572,6 +600,7 @@ const ManageDoctorsView = () => {
                               className="admin-actions-menu__item admin-actions-menu__item--danger"
                               onClick={() => {
                                 setDeleteTarget(doctor);
+                                setDeleteError("");
                                 setOpenMenuId("");
                               }}
                             >
@@ -606,6 +635,19 @@ const ManageDoctorsView = () => {
         onCancel={closeDeleteDialog}
         onConfirm={handleDelete}
         busy={busyId === deleteTarget?._id}
+        errorMessage={deleteError}
+      />
+
+      <ConfirmDialog
+        isOpen={showAddSuccess}
+        eyebrow="Doctor record"
+        title="Doctor Added Successfully."
+        message="The new doctor is now visible in the Manage Doctors list."
+        confirmLabel="OK"
+        cancelLabel=""
+        confirmTone="neutral"
+        onCancel={() => setShowAddSuccess(false)}
+        onConfirm={() => setShowAddSuccess(false)}
       />
     </div>
   );

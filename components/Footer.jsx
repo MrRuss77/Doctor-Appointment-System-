@@ -61,16 +61,6 @@ function Footer({ onNavigate }) {
     onNavigate?.(page, options);
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-
-    console.log("Feedback form submitted:", data);
-    event.target.reset();
-  };
-
   return (
     <footer className="mdc-footer">
       <div className="mdc-footer__inner">
@@ -223,43 +213,6 @@ function Footer({ onNavigate }) {
             </ul>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <h3 className="mdc-footer__col-heading">Feedback Form</h3>
-
-            <div className="mdc-footer__stack">
-              <div className="mdc-footer__form-group">
-                <label className="mdc-footer__form-label">
-                  Full Name<span className="mdc-footer__required">*</span>
-                </label>
-                <input name="fullName" type="text" className="mdc-footer__input" required />
-              </div>
-
-              <div className="mdc-footer__form-row">
-                <div className="mdc-footer__form-group">
-                  <label className="mdc-footer__form-label">
-                    Phone Number<span className="mdc-footer__required">*</span>
-                  </label>
-                  <input name="phone" type="tel" className="mdc-footer__input" required />
-                </div>
-
-                <div className="mdc-footer__form-group">
-                  <label className="mdc-footer__form-label">Email</label>
-                  <input name="email" type="email" className="mdc-footer__input" />
-                </div>
-              </div>
-
-              <div className="mdc-footer__form-group">
-                <label className="mdc-footer__form-label">
-                  Message<span className="mdc-footer__required">*</span>
-                </label>
-                <textarea name="message" className="mdc-footer__textarea" rows={3} required />
-              </div>
-
-              <button type="submit" className="mdc-footer__submit">
-                Submit
-              </button>
-            </div>
-          </form>
         </div>
       </div>
 

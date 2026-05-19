@@ -21,6 +21,8 @@ const sanitizeUser = (user) => ({
 
 const normalizeEmail = (email = "") => email.toLowerCase().trim();
 const normalizePhone = (phone = "") => phone.trim();
+const invalidResetEmailMessage =
+  "Invalid Email — Please enter a valid registered email address and try again.";
 
 const createAndSendOTP = async (email) => {
   const normalizedEmail = normalizeEmail(email);
@@ -150,17 +152,22 @@ router.post("/send-otp", async (req, res, next) => {
     if (!isValidEmail(normalizedEmail)) {
       return res
         .status(400)
-        .json({ success: false, message: "Please provide a valid email address." });
+        .json({ success: false, message: invalidResetEmailMessage });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail }).select("_id");
+
+    if (!user) {
+      // This app already reveals account existence during reset-password verification,
+      // so validate before SMTP to avoid false success messages and bounce-backed mail.
+      return res.status(404).json({ success: false, message: invalidResetEmailMessage });
     }
 
     try {
       await createAndSendOTP(normalizedEmail);
     } catch (emailError) {
       console.error("Email sending failed:", emailError);
-      return res.status(500).json({ 
-        success: false,
-        message: "Failed to send OTP email. This might be due to email provider rate limits or configuration. Please try again later." 
-      });
+      return res.status(502).json({ success: false, message: invalidResetEmailMessage });
     }
 
     return sendSuccess(res, {

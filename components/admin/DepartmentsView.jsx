@@ -29,17 +29,48 @@ const iconMap = {
   pediatrics: pediatricsImg
 };
 
+const departmentIconOptions = [
+  { label: "Anesthesiology", value: "/components/departments/Anesthiology.png", image: anesthesiologyImg },
+  { label: "Cardiology", value: "/components/departments/Cardiology.png", image: cardiologyImg },
+  { label: "Neurology", value: "/components/departments/Neurology.png", image: neurologyImg },
+  { label: "Pediatrics", value: "/components/departments/Pediatrics.png", image: pediatricsImg },
+  { label: "Dentist", value: "/components/departments/dentist.png.png", image: dentistImg },
+  { label: "Orthopedics", value: "/components/departments/Orthopedics.png", image: orthopedicsImg },
+  { label: "ENT", value: "/components/departments/ENT.png", image: entImg },
+  { label: "Gynecologist", value: "/components/departments/Gynecologist.png", image: gynecologistImg },
+  { label: "Psychiatrist", value: "/components/departments/Physiactrist.png", image: psychiatristImg }
+];
+
+const iconPathMap = Object.fromEntries(
+  departmentIconOptions.map((option) => [option.value, option.image])
+);
+
 const normalizeDepartmentName = (value = "") =>
   String(value).trim().toLowerCase();
+
+const resolveDepartmentIcon = (department) =>
+  iconPathMap[department.icon] || department.icon || iconMap[normalizeDepartmentName(department.name)] || null;
+
+const emptyDepartmentDraft = {
+  name: "",
+  description: "",
+  icon: "",
+  iconDataUrl: "",
+  iconPreviewName: ""
+};
 
 const DepartmentsView = () => {
   const [feedback, setFeedback] = useState("");
   const [departments, setDepartments] = useState([]);
   const [busyId, setBusyId] = useState("");
   const [modalState, setModalState] = useState({ isOpen: false, mode: "add", data: null });
+  const [modalDraft, setModalDraft] = useState(emptyDepartmentDraft);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const closeDepartmentModal = () => setModalState({ isOpen: false, mode: "add", data: null });
+  const closeDepartmentModal = () => {
+    setModalState({ isOpen: false, mode: "add", data: null });
+    setModalDraft(emptyDepartmentDraft);
+  };
 
   const loadDepartments = async () => {
     const data = await fetchDepartments();
@@ -54,27 +85,87 @@ const DepartmentsView = () => {
     () =>
       departments.map((department) => ({
         ...department,
-        iconImage: iconMap[normalizeDepartmentName(department.name)] || null
+        iconImage: resolveDepartmentIcon(department)
       })),
     [departments]
   );
 
   const handleAddDepartment = () => {
+    setModalDraft(emptyDepartmentDraft);
     setModalState({ isOpen: true, mode: "add", data: null });
   };
 
   const handleEditDepartment = (department) => {
+    setModalDraft({
+      name: department.name || "",
+      description: department.description || "",
+      icon: department.icon || ""
+    });
     setModalState({ isOpen: true, mode: "edit", data: department });
   };
 
-  const handleSaveModal = async ({ name, description }) => {
+  const handleModalDraftChange = (field, value) => {
+    setModalDraft((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const handleDepartmentIconUpload = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setModalDraft((current) => ({
+        ...current,
+        iconDataUrl: "",
+        iconPreviewName: ""
+      }));
+      return;
+    }
+
+    if (file.type !== "image/png") {
+      setFeedback("Department icon must be a PNG image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      setFeedback("Department icon must be smaller than 1MB.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setModalDraft((current) => ({
+        ...current,
+        icon: "",
+        iconDataUrl: String(reader.result || ""),
+        iconPreviewName: file.name
+      }));
+      setFeedback("");
+    };
+    reader.onerror = () => setFeedback("Could not read the selected icon.");
+    reader.readAsDataURL(file);
+  };
+
+  const selectedIconPreview = modalDraft.iconDataUrl || iconPathMap[modalDraft.icon] || null;
+
+  const handleSaveModal = async () => {
+    const { name, description, icon } = modalDraft;
+
     if (!name || !name.trim()) return;
 
     if (modalState.mode === "add") {
       setBusyId("create");
       setFeedback("");
       try {
-        const response = await createDepartment({ name: name.trim(), description: description.trim() });
+        const response = await createDepartment({
+          name: name.trim(),
+          description: description.trim(),
+          icon,
+          iconDataUrl: modalDraft.iconDataUrl
+        });
         setDepartments((current) => [response, ...current]);
         setFeedback(response.message || "Department created successfully.");
       } catch (error) {
@@ -90,7 +181,9 @@ const DepartmentsView = () => {
         const response = await updateDepartment(department._id, {
           ...department,
           name: name.trim(),
-          description: description.trim()
+          description: description.trim(),
+          icon,
+          iconDataUrl: modalDraft.iconDataUrl
         });
         setDepartments((current) => current.map((item) => (item._id === department._id ? response : item)));
         setFeedback(response.message || "Department updated successfully.");
@@ -207,20 +300,56 @@ const DepartmentsView = () => {
               <input
                 type="text"
                 className="admin-input"
-                defaultValue={modalState.data?.name || ""}
-                id="modal-dept-name"
+                value={modalDraft.name}
+                onChange={(event) => handleModalDraftChange("name", event.target.value)}
                 autoFocus
               />
             </div>
             
-            <div style={{ marginBottom: '28px' }}>
+            <div style={{ marginBottom: '16px' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: '#334155' }}>Description</label>
               <textarea
                 className="admin-input"
-                defaultValue={modalState.data?.description || ""}
-                id="modal-dept-desc"
+                value={modalDraft.description}
+                onChange={(event) => handleModalDraftChange("description", event.target.value)}
                 style={{ minHeight: '100px', resize: 'vertical', paddingTop: '12px' }}
               />
+            </div>
+
+            <div style={{ marginBottom: '28px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: '#334155' }}>Department Icon</label>
+              <select
+                className="admin-select"
+                value={modalDraft.icon}
+                onChange={(event) => {
+                  handleModalDraftChange("icon", event.target.value);
+                  handleModalDraftChange("iconDataUrl", "");
+                  handleModalDraftChange("iconPreviewName", "");
+                }}
+              >
+                <option value="">Use department initial</option>
+                {departmentIconOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="file"
+                className="admin-input admin-file-input"
+                accept="image/png,.png"
+                onChange={handleDepartmentIconUpload}
+                style={{ marginTop: '12px' }}
+              />
+              {selectedIconPreview ? (
+                <div className="department-icon-preview">
+                  <img src={selectedIconPreview} alt="" aria-hidden="true" />
+                  <span>
+                    {modalDraft.iconPreviewName ||
+                      `${departmentIconOptions.find((option) => option.value === modalDraft.icon)?.label} icon selected`}
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
@@ -229,10 +358,7 @@ const DepartmentsView = () => {
               </button>
               <button 
                 className="admin-btn-primary" 
-                onClick={() => handleSaveModal({ 
-                  name: document.getElementById('modal-dept-name').value,
-                  description: document.getElementById('modal-dept-desc').value 
-                })}
+                onClick={handleSaveModal}
               >
                 Save Department
               </button>

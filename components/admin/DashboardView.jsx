@@ -143,11 +143,10 @@ const DashboardView = ({ onOpenManageDoctors }) => {
       doctors
         .filter((doctor) => doctor.isActive !== false)
         .slice(0, 4)
-        .map((doctor, index) => ({
+        .map((doctor) => ({
           id: doctor._id,
           name: doctor.fullName,
-          specialty: doctor.department?.name || doctor.specialization,
-          room: `Room ${String(index + 1).padStart(2, "0")}`
+          specialty: doctor.department?.name || doctor.specialization
         })),
     [doctors]
   );
@@ -220,7 +219,6 @@ const DashboardView = ({ onOpenManageDoctors }) => {
                   <strong>{doctor.name}</strong>
                   <span>{doctor.specialty}</span>
                 </div>
-                <div className="status-pill grey">{doctor.room}</div>
               </div>
             ))
           ) : (

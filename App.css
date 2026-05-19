@@ -347,6 +347,18 @@ video {
   line-height: 1.7;
 }
 
+.logout-dialog__error {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 16px;
+  background: rgba(254, 226, 226, 0.72);
+  color: #b91c1c;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .logout-dialog__actions {
   display: flex;
   justify-content: flex-end;
@@ -908,6 +920,14 @@ video {
 .doctor-card__field {
   margin: 10px 0 0;
   font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.doctor-card__nmc,
+.doctor-booking__nmc {
+  margin: 8px 0 0;
+  color: var(--text-soft);
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
@@ -2356,7 +2376,7 @@ video {
 
 .mdc-footer__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 36px;
 }
 

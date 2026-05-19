@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 const ConfirmDialog = ({
   isOpen,
@@ -10,8 +10,27 @@ const ConfirmDialog = ({
   confirmTone = "danger",
   onConfirm,
   onCancel,
-  busy = false
+  busy = false,
+  errorMessage = ""
 }) => {
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !busy) {
+        onCancel?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, busy, onCancel]);
+
   if (!isOpen) {
     return null;
   }
@@ -27,16 +46,19 @@ const ConfirmDialog = ({
         <p className="logout-dialog__eyebrow">{eyebrow}</p>
         <h2 id="confirm-dialog-title">{title}</h2>
         <p className="logout-dialog__text">{message}</p>
+        {errorMessage ? <p className="logout-dialog__error">{errorMessage}</p> : null}
 
         <div className="logout-dialog__actions">
-          <button
-            type="button"
-            className="logout-dialog__cancel"
-            onClick={onCancel}
-            disabled={busy}
-          >
-            {cancelLabel}
-          </button>
+          {cancelLabel ? (
+            <button
+              type="button"
+              className="logout-dialog__cancel"
+              onClick={onCancel}
+              disabled={busy}
+            >
+              {cancelLabel}
+            </button>
+          ) : null}
 
           <button
             type="button"

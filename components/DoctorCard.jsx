@@ -53,6 +53,7 @@ const DoctorCard = ({ doctor, onBookAppointment }) => {
         <div className="doctor-card__content" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <h3>{doctor.name}</h3>
           <p className="doctor-card__field">{doctor.field}</p>
+          {doctor.nmcNumber ? <p className="doctor-card__nmc">NMC No: {doctor.nmcNumber}</p> : null}
           <p className="doctor-card__availability">{doctor.availability}</p>
           <div className="doctor-card__actions">
             <button

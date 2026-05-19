@@ -166,10 +166,6 @@ const AppointmentsView = () => {
           <h2 className="admin-view-title">Appointments</h2>
           <p className="admin-section-subtitle">Review bookings, update status, and remove invalid requests.</p>
         </div>
-        <label className="admin-toolbar-filter">
-          <span>Status Filter</span>
-          <FilterDropdown value={statusFilter} onChange={setStatusFilter} />
-        </label>
       </div>
 
       {feedback ? <p className="admin-feedback">{feedback}</p> : null}
@@ -206,6 +202,13 @@ const AppointmentsView = () => {
       </div>
 
       <div className="manage-list-card">
+        <div className="manage-list-toolbar">
+          <label className="admin-toolbar-filter">
+            <span>Status Filter</span>
+            <FilterDropdown value={statusFilter} onChange={setStatusFilter} />
+          </label>
+        </div>
+
         <div className="manage-list-header manage-list-header--appointments">
           <div className="col-name font-bold">Patient</div>
           <div className="col-specialty font-bold">Doctor</div>

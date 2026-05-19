@@ -481,6 +481,26 @@
   font-weight: 700;
 }
 
+.department-icon-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  color: #617694;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.department-icon-preview img {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  object-fit: contain;
+  border: 1px solid rgba(76, 116, 194, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 6px;
+}
+
 .doctor-photo-preview img,
 .manage-doctor-avatar {
   width: 44px;
@@ -578,6 +598,12 @@
   margin-bottom: 14px;
 }
 
+.manage-list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+
 .manage-list-body {
   display: grid;
   gap: 14px;
@@ -608,6 +634,11 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
+}
+
+.manage-edit-stack {
+  display: grid;
+  gap: 8px;
 }
 
 .manage-doctor-avatar {

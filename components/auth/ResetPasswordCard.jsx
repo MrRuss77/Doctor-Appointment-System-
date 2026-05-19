@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./login.css";
 
 const AuthIcon = () => (
@@ -7,11 +7,47 @@ const AuthIcon = () => (
   </svg>
 );
 
-const ResetPasswordCard = ({ step = "email", onBackToLogin, onSubmitEmail, onSubmitPasswords }) => {
+const ResetPasswordCard = ({
+  step = "email",
+  onBackToLogin,
+  onSubmitEmail,
+  onSubmitPasswords,
+  resetEmailError = "",
+  onDismissResetEmailError
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");
   const [message, setMessage] = useState("");
+  const emailInputRef = useRef(null);
+  const dismissButtonRef = useRef(null);
+
+  const closeResetEmailError = () => {
+    onDismissResetEmailError?.();
+    window.requestAnimationFrame(() => {
+      emailInputRef.current?.focus();
+    });
+  };
+
+  useEffect(() => {
+    if (!resetEmailError) {
+      return undefined;
+    }
+
+    dismissButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeResetEmailError();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [resetEmailError]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -55,10 +91,12 @@ const ResetPasswordCard = ({ step = "email", onBackToLogin, onSubmitEmail, onSub
               Email Address
               <input
                 type="email"
+                ref={emailInputRef}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setMessage("");
+                  onDismissResetEmailError?.();
                 }}
               />
             </label>
@@ -103,6 +141,26 @@ const ResetPasswordCard = ({ step = "email", onBackToLogin, onSubmitEmail, onSub
           Already have an account? <span onClick={onBackToLogin}>Login</span>
         </div>
       </div>
+
+      {resetEmailError ? (
+        <div className="auth-error-dialog" role="presentation">
+          <div
+            className="auth-error-dialog__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-email-error-title"
+          >
+            <p className="auth-error-dialog__eyebrow">Password reset</p>
+            <h2 id="reset-email-error-title">Invalid Email</h2>
+            <p className="auth-error-dialog__text">{resetEmailError}</p>
+            <div className="auth-error-dialog__actions">
+              <button type="button" ref={dismissButtonRef} onClick={closeResetEmailError}>
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

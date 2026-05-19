@@ -1,5 +1,6 @@
 import express from "express";
 import fs from "fs/promises";
+import mongoose from "mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
 import Appointment from "../models/Appointment.js";
@@ -38,7 +39,7 @@ const parseDoctorName = (fullName = "") => {
   };
 };
 
-const saveDoctorImage = async (imageDataUrl, fullName) => {
+const saveDoctorImage = async (imageDataUrl, fullName, session) => {
   if (!imageDataUrl) {
     return null;
   }
@@ -65,12 +66,14 @@ const saveDoctorImage = async (imageDataUrl, fullName) => {
     .slice(0, 48) || "doctor";
   const fileName = `${Date.now()}-${safeName}.${extension}`;
 
-  return DoctorImage.create({
+  const [savedImage] = await DoctorImage.create([{
     mimeType,
     fileName,
     data: imageBuffer,
     size: imageBuffer.length
-  });
+  }], session ? { session } : {});
+
+  return savedImage;
 };
 
 const deleteUploadedDoctorImage = async (imagePath) => {
@@ -99,7 +102,7 @@ const deleteDoctorPhotoAsset = async (assetId) => {
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const resolveDepartmentId = async ({ department, departmentName }) => {
+const resolveDepartmentId = async ({ department, departmentName }, session) => {
   if (department) {
     return department;
   }
@@ -110,7 +113,7 @@ const resolveDepartmentId = async ({ department, departmentName }) => {
 
   const departmentRecord = await Department.findOne({
     name: new RegExp(`^${escapeRegex(String(departmentName).trim())}$`, "i")
-  });
+  }).session(session || null);
 
   if (!departmentRecord) {
     throw new HttpError(400, "Selected department does not exist.");
@@ -119,7 +122,7 @@ const resolveDepartmentId = async ({ department, departmentName }) => {
   return departmentRecord._id;
 };
 
-const buildDoctorPayload = async (body) => {
+const buildDoctorPayload = async (body, session) => {
   const fullName = String(body.fullName || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const phone = String(body.phone || "").trim();
@@ -129,8 +132,8 @@ const buildDoctorPayload = async (body) => {
     throw new HttpError(400, "Name, email, phone, and specialization are required.");
   }
 
-  const department = await resolveDepartmentId(body);
-  const savedImage = await saveDoctorImage(body.imageDataUrl, fullName);
+  const department = await resolveDepartmentId(body, session);
+  const savedImage = await saveDoctorImage(body.imageDataUrl, fullName, session);
 
   return {
     fullName,
@@ -139,6 +142,7 @@ const buildDoctorPayload = async (body) => {
     department,
     specialization,
     qualification: String(body.qualification || "").trim(),
+    nmcNumber: String(body.nmcNumber || "").trim(),
     experienceYears: Number(body.experienceYears || 0),
     availabilityText: String(body.availabilityText || "No availability added yet").trim(),
     image: savedImage ? "" : String(body.image || "").trim(),
@@ -148,8 +152,8 @@ const buildDoctorPayload = async (body) => {
   };
 };
 
-const findOrCreateDoctorUser = async ({ fullName, email, phone, password }) => {
-  const existingUser = await User.findOne({ email });
+const findOrCreateDoctorUser = async ({ fullName, email, phone, password, session }) => {
+  const existingUser = await User.findOne({ email }).session(session || null);
 
   if (existingUser) {
     if (existingUser.role !== "doctor") {
@@ -160,20 +164,20 @@ const findOrCreateDoctorUser = async ({ fullName, email, phone, password }) => {
     existingUser.firstName = firstName;
     existingUser.lastName = lastName;
     existingUser.phone = phone;
-    await existingUser.save();
+    await existingUser.save(session ? { session } : {});
     return {
       user: existingUser,
       wasCreated: false
     };
   }
 
-  const user = await User.create({
+  const [user] = await User.create([{
     ...parseDoctorName(fullName),
     email,
     phone,
     password: password || doctorDefaultPassword,
     role: "doctor"
-  });
+  }], session ? { session } : {});
 
   return {
     user,
@@ -482,35 +486,39 @@ router.get(
 router.post(
   "/",
   asyncHandler(async (req, res) => {
-    const doctorPayload = await buildDoctorPayload(req.body || {});
-    const existingDoctor = await Doctor.findOne({ email: doctorPayload.email });
-
-    if (existingDoctor) {
-      throw new HttpError(409, "A doctor already exists with this email.");
-    }
-
-    const { user, wasCreated } = await findOrCreateDoctorUser({
-      ...doctorPayload,
-      password: String(req.body?.password || "").trim()
-    });
-
-    let doctor;
+    const session = await mongoose.startSession();
+    let createdDoctorId;
+    let wasCreated = false;
 
     try {
-      doctor = await Doctor.create({
-        ...doctorPayload,
-        user: user._id
-      });
-    } catch (error) {
-      if (!doctorPayload.photoAsset) {
-        throw error;
-      }
+      await session.withTransaction(async () => {
+        const doctorPayload = await buildDoctorPayload(req.body || {}, session);
+        const existingDoctor = await Doctor.findOne({ email: doctorPayload.email }).session(session);
 
-      await deleteDoctorPhotoAsset(doctorPayload.photoAsset);
-      throw error;
+        if (existingDoctor) {
+          throw new HttpError(409, "A doctor already exists with this email.");
+        }
+
+        const doctorUser = await findOrCreateDoctorUser({
+          ...doctorPayload,
+          password: String(req.body?.password || "").trim(),
+          session
+        });
+
+        wasCreated = doctorUser.wasCreated;
+
+        const [doctor] = await Doctor.create([{
+          ...doctorPayload,
+          user: doctorUser.user._id
+        }], { session });
+
+        createdDoctorId = doctor._id;
+      });
+    } finally {
+      await session.endSession();
     }
 
-    const populatedDoctor = await Doctor.findById(doctor._id).populate("department").populate("user");
+    const populatedDoctor = await Doctor.findById(createdDoctorId).populate("department").populate("user");
     const passwordMessage = req.body?.password
       ? "Doctor created successfully."
       : wasCreated
@@ -548,35 +556,50 @@ router.put(
 router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
-    const doctor = await Doctor.findById(req.params.id);
+    const session = await mongoose.startSession();
+    let deletedDoctorImagePath = "";
 
-    if (!doctor) {
-      throw new HttpError(404, "Doctor not found.");
+    try {
+      await session.withTransaction(async () => {
+        const doctor = await Doctor.findById(req.params.id).session(session);
+
+        if (!doctor) {
+          throw new HttpError(404, "Doctor not found.");
+        }
+
+        const futureAppointments = await Appointment.countDocuments({
+          doctor: doctor._id,
+          status: { $in: ["pending", "confirmed"] }
+        }).session(session);
+
+        if (futureAppointments > 0) {
+          throw new HttpError(
+            409,
+            "Doctor cannot be deleted because pending or confirmed appointments still exist. Please complete, cancel, or reassign those appointments first."
+          );
+        }
+
+        deletedDoctorImagePath = doctor.image;
+
+        await Doctor.deleteOne({ _id: doctor._id }).session(session);
+        if (doctor.photoAsset) {
+          await DoctorImage.deleteOne({ _id: doctor.photoAsset }).session(session);
+        }
+
+        if (doctor.user) {
+          const linkedDoctorCount = await Doctor.countDocuments({ user: doctor.user }).session(session);
+
+          // Keep the linked account only when another doctor profile still depends on it.
+          if (linkedDoctorCount === 0) {
+            await User.deleteOne({ _id: doctor.user, role: "doctor" }).session(session);
+          }
+        }
+      });
+    } finally {
+      await session.endSession();
     }
 
-    const futureAppointments = await Appointment.countDocuments({
-      doctor: doctor._id,
-      status: { $in: ["pending", "confirmed"] }
-    });
-
-    if (futureAppointments > 0) {
-      throw new HttpError(
-        409,
-        "Doctor cannot be deleted while pending or confirmed appointments still exist."
-      );
-    }
-
-    await Doctor.deleteOne({ _id: doctor._id });
-    await deleteUploadedDoctorImage(doctor.image);
-    await deleteDoctorPhotoAsset(doctor.photoAsset);
-
-    if (doctor.user) {
-      const linkedDoctorCount = await Doctor.countDocuments({ user: doctor.user });
-
-      if (linkedDoctorCount === 0) {
-        await User.deleteOne({ _id: doctor.user, role: "doctor" });
-      }
-    }
+    await deleteUploadedDoctorImage(deletedDoctorImagePath);
 
     sendSuccess(res, { message: "Doctor deleted successfully." });
   })

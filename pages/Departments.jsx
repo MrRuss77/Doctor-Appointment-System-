@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import anesthesiologyImg from "../components/departments/Anesthiology.png";
 import cardiacImg from "../components/departments/Cardiology.png";
 import dentistImg from "../components/departments/dentist.png.png";
@@ -8,6 +8,33 @@ import orthopedicsImg from "../components/departments/Orthopedics.png";
 import pediatricsImg from "../components/departments/Pediatrics.png";
 import psychiatristImg from "../components/departments/Physiactrist.png";
 import neurologyImg from "../components/departments/Neurology.png";
+import { fetchDepartments } from "../src/api/client";
+
+const iconMap = {
+  "/components/departments/Anesthiology.png": anesthesiologyImg,
+  "/components/departments/Cardiology.png": cardiacImg,
+  "/components/departments/dentist.png.png": dentistImg,
+  "/components/departments/ENT.png": entImg,
+  "/components/departments/Gynecologist.png": gynecologistImg,
+  "/components/departments/Orthopedics.png": orthopedicsImg,
+  "/components/departments/Pediatrics.png": pediatricsImg,
+  "/components/departments/Physiactrist.png": psychiatristImg,
+  "/components/departments/Neurology.png": neurologyImg
+};
+
+const nameIconMap = {
+  anesthesiology: anesthesiologyImg,
+  anesthiology: anesthesiologyImg,
+  dentist: dentistImg,
+  psychiatrist: psychiatristImg,
+  physiactrist: psychiatristImg,
+  gynecologist: gynecologistImg,
+  cardiology: cardiacImg,
+  neurology: neurologyImg,
+  pediatrics: pediatricsImg,
+  orthopedics: orthopedicsImg,
+  ent: entImg
+};
 
 const departmentData = [
   { name: "Anesthiology", image: anesthesiologyImg },
@@ -23,8 +50,46 @@ const departmentData = [
 
 const Departments = ({ onSelectDepartment }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [liveDepartments, setLiveDepartments] = useState([]);
 
-  const filtered = departmentData.filter(d => 
+  useEffect(() => {
+    let isActive = true;
+
+    fetchDepartments()
+      .then((departments) => {
+        if (!isActive || !Array.isArray(departments)) {
+          return;
+        }
+
+        setLiveDepartments(
+          departments.map((department) => ({
+            name: department.name,
+            desc: department.description,
+            image:
+              iconMap[department.icon] ||
+              department.icon ||
+              nameIconMap[String(department.name || "").trim().toLowerCase()] ||
+              null
+          }))
+        );
+      })
+      .catch(() => {
+        if (isActive) {
+          setLiveDepartments([]);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const departments = useMemo(
+    () => (liveDepartments.length > 0 ? liveDepartments : departmentData),
+    [liveDepartments]
+  );
+
+  const filtered = departments.filter(d =>
     d.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -68,7 +133,13 @@ const Departments = ({ onSelectDepartment }) => {
             onMouseOver={(e) => e.currentTarget.style.boxShadow = "0 8px 25px rgba(14, 165, 233, 0.2)"}
             onMouseOut={(e) => e.currentTarget.style.boxShadow = "none"}
           >
-            <img src={dept.image} alt={dept.name} style={{ width: "65px", height: "65px", objectFit: "contain" }} />
+            {dept.image ? (
+              <img src={dept.image} alt={dept.name} style={{ width: "65px", height: "65px", objectFit: "contain" }} />
+            ) : (
+              <span style={{ width: "65px", height: "65px", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "18px", background: "#e0f2fe", color: "#0f172a", fontSize: "24px", fontWeight: "800" }}>
+                {dept.name?.charAt(0)?.toUpperCase()}
+              </span>
+            )}
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: "20px", color: "#0f172a", fontWeight: "600" }}>{dept.name}</div>
               {dept.desc && <div style={{ fontSize: "14px", color: "#475569", marginTop: "4px", fontWeight: "500" }}>{dept.desc}</div>}

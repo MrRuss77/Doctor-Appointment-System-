@@ -90,6 +90,11 @@ const doctorSchema = new mongoose.Schema(
       trim: true,
       maxlength: [200, "Qualification cannot be longer than 200 characters."]
     },
+    nmcNumber: {
+      type: String,
+      trim: true,
+      maxlength: [60, "NMC number cannot be longer than 60 characters."]
+    },
     experienceYears: {
       type: Number,
       min: [0, "Experience years cannot be negative."],

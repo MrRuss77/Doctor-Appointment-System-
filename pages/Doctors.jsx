@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import DoctorCard from "../components/DoctorCard";
+import ConfirmDialog from "../components/ConfirmDialog";
 import Departments from "./Departments";
 import LoginCard from "../components/auth/LoginCard";
 import OtpCard from "../components/auth/OtpCard";
@@ -325,6 +326,7 @@ const mapDoctorRecord = (doctor) => ({
   field: doctor.department?.name || "General",
   specialization: doctor.specialization || "Not specified",
   qualification: doctor.qualification || "Not specified",
+  nmcNumber: doctor.nmcNumber || "",
   availability: doctor.availabilityText || "Schedule not updated",
   availabilitySlots: Array.isArray(doctor.availabilitySlots) ? doctor.availabilitySlots : [],
   consultationFee: Number(doctor.consultationFee || 0),
@@ -405,6 +407,7 @@ const getUserId = (user) => String(user?._id || user?.id || "").trim();
 const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSuccess, onBack }) => {
   const [loginView, setLoginView] = useState("login");
   const [authMessage, setAuthMessage] = useState("");
+  const [resetEmailError, setResetEmailError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [resetPayload, setResetPayload] = useState(null);
 
@@ -421,6 +424,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
   const [bookingForm, setBookingForm] = useState(emptyBookingForm);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
+  const [bookingDialog, setBookingDialog] = useState({ isOpen: false, type: "success", message: "" });
 
   const currentPage = pageContent[activePage] || pageContent.doctors;
   const showDoctors = activePage === "doctors";
@@ -665,6 +669,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
   const clearStatus = () => {
     setAuthMessage("");
+    setResetEmailError("");
   };
 
   const exitAuthFlow = () => {
@@ -746,8 +751,10 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       setResetPayload({ email });
       setLoginView("otp");
       setAuthMessage(response.message);
+      setResetEmailError("");
     } catch (error) {
-      setAuthMessage(error.message);
+      setAuthMessage("");
+      setResetEmailError(error.message);
     } finally {
       setAuthBusy(false);
     }
@@ -974,6 +981,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       const refreshedAppointments = await fetchAppointments({ doctor: selectedDoctor.backendId });
       setDoctorAppointments(Array.isArray(refreshedAppointments) ? refreshedAppointments : []);
       setBookingMessage(response.message || "Appointment booked successfully.");
+      setBookingDialog({
+        isOpen: true,
+        type: "success",
+        message: "Appointment Booked Successfully!"
+      });
       setBookingForm({
         ...emptyBookingForm,
         ...buildProfilePrefill(authUser),
@@ -982,6 +994,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       });
     } catch (error) {
       setBookingMessage(error.message);
+      setBookingDialog({
+        isOpen: true,
+        type: "error",
+        message: "Booking Failed. Please try again."
+      });
     } finally {
       setBookingBusy(false);
     }
@@ -1019,6 +1036,8 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
           setLoginView("login");
         }}
         onSubmitEmail={handleRequestOtp}
+        resetEmailError={resetEmailError}
+        onDismissResetEmailError={() => setResetEmailError("")}
       />
     ),
     "new-password": (
@@ -1078,6 +1097,9 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
               <div className="doctor-booking__header">
                 <h2>{selectedDoctor.name}</h2>
                 <p className="doctor-booking__field">{selectedDoctor.field}</p>
+                {selectedDoctor.nmcNumber ? (
+                  <p className="doctor-booking__nmc">NMC No: {selectedDoctor.nmcNumber}</p>
+                ) : null}
               </div>
             </div>
 
@@ -1357,6 +1379,22 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
           </p>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={bookingDialog.isOpen}
+        eyebrow="Appointment booking"
+        title={bookingDialog.message}
+        message={
+          bookingDialog.type === "success"
+            ? "Your appointment request has been submitted for review."
+            : "We could not complete the booking request right now."
+        }
+        confirmLabel={bookingDialog.type === "success" ? "OK" : "Try Again"}
+        cancelLabel=""
+        confirmTone={bookingDialog.type === "success" ? "neutral" : "danger"}
+        onCancel={() => setBookingDialog((current) => ({ ...current, isOpen: false }))}
+        onConfirm={() => setBookingDialog((current) => ({ ...current, isOpen: false }))}
+      />
     </section>
   );
 };
