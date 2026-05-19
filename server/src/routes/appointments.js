@@ -227,6 +227,7 @@ router.put(
     const nextAppointmentDate = req.body.appointmentDate
       ? new Date(req.body.appointmentDate)
       : appointment.appointmentDate;
+    const previousAppointmentTime = appointment.appointmentDate?.toISOString?.() || "";
 
     if (Number.isNaN(nextAppointmentDate.getTime())) {
       throw new HttpError(400, "Please provide a valid appointment date and time.");
@@ -261,15 +262,54 @@ router.put(
     await appointment.save({ w: "majority" });
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
+    const wasRescheduled = previousAppointmentTime !== nextAppointmentDate.toISOString();
 
     const normalizedStatus = String(appointment.status || "").toLowerCase();
     const message =
       normalizedStatus === "cancelled"
         ? "Appointment cancelled successfully."
+        : wasRescheduled
+          ? "Appointment rescheduled successfully."
         : "Appointment updated successfully.";
 
     sendSuccess(res, {
       message,
+      data: populatedAppointment.toObject?.() || populatedAppointment
+    });
+  })
+);
+
+router.post(
+  "/:id/feedback",
+  asyncHandler(async (req, res) => {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      throw new HttpError(404, "Appointment not found.");
+    }
+
+    const diagnosis = String(req.body?.diagnosis || "").trim();
+    const remarks = String(req.body?.remarks || "").trim();
+    const prescription = String(req.body?.prescription || "").trim();
+
+    if (!diagnosis) {
+      throw new HttpError(400, "Diagnosis is required.");
+    }
+
+    appointment.feedbackEntries.push({
+      diagnosis,
+      remarks,
+      prescription,
+      createdByRole: req.body?.createdByRole || "doctor"
+    });
+
+    await appointment.save({ w: "majority" });
+
+    const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
+
+    sendSuccess(res, {
+      status: 201,
+      message: "Feedback added successfully.",
       data: populatedAppointment.toObject?.() || populatedAppointment
     });
   })

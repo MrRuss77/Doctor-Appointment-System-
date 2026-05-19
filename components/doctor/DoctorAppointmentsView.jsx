@@ -1,9 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { PatientDetailsModal } from "./DoctorModals";
-import { fetchAppointments, updateAppointment } from "../../src/api/client";
+import {
+  addAppointmentFeedback,
+  fetchAppointments,
+  updateAppointment
+} from "../../src/api/client";
+import {
+  PatientDetailsModal,
+  RescheduleAppointmentModal
+} from "./DoctorModals";
+import { findPatientRecordForAppointment } from "./patientHistory";
 
 const formatTime = (value) => {
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) {
     return "No time";
   }
@@ -14,63 +23,41 @@ const formatTime = (value) => {
   });
 };
 
-const formatIsoDate = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "No date";
-  }
-
-  return date.toISOString().slice(0, 10);
-};
-
-const formatTimeInput = (value) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "09:00";
-  }
-
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-};
-
 const normalizeName = (value = "") =>
   String(value)
     .replace(/^dr\.?\s*/i, "")
     .trim()
     .toLowerCase();
 
-const buildFallbackAppointments = (authUser) => [
-  {
-    _id: "demo-appointment-1",
-    patient: {
-      firstName: "Demo",
-      lastName: "Patient",
-      email: "demo.patient@example.com",
-      phone: "9800000001"
-    },
-    doctor: {
-      fullName: [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ") || authUser?.name || "Doctor",
-      email: authUser?.email || ""
-    },
-    department: {
-      name: authUser?.department || authUser?.specialization || "General"
-    },
-    appointmentDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    status: "pending",
-    reason: "General consultation",
-    notes: "Requested by: Demo Patient | Phone: 9800000001 | Email: demo.patient@example.com | Address: Kathmandu | Gender: other | Blood Group: O+ | Age: 24"
-  }
-];
+const startOfWeek = (date) => {
+  const nextDate = new Date(date);
+  const weekdayIndex = (nextDate.getDay() + 6) % 7;
+  nextDate.setHours(0, 0, 0, 0);
+  nextDate.setDate(nextDate.getDate() - weekdayIndex);
+  return nextDate;
+};
+
+const endOfWeek = (date) => {
+  const nextDate = startOfWeek(date);
+  nextDate.setDate(nextDate.getDate() + 7);
+  return nextDate;
+};
 
 const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
   const [appointments, setAppointments] = useState([]);
   const [feedback, setFeedback] = useState("");
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [rescheduleError, setRescheduleError] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const [modalFeedbackError, setModalFeedbackError] = useState("");
+  const [modalFeedbackSuccess, setModalFeedbackSuccess] = useState("");
 
   const loadAppointments = async () => {
     const filters = doctorProfile?._id ? { doctor: doctorProfile._id } : {};
     const data = await fetchAppointments(filters);
-    setAppointments(data || []);
+    setAppointments(Array.isArray(data) ? data : []);
   };
 
   useEffect(() => {
@@ -87,43 +74,14 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
     };
   }, [doctorProfile?._id]);
 
-  const mappedPatientForModal = useMemo(() => {
-    if (!selectedAppointment?.patient) {
-      return null;
-    }
-
-    const patient = selectedAppointment.patient;
-    const noteParts = String(selectedAppointment.notes || "")
-      .split("|")
-      .map((part) => part.trim());
-    const getValue = (label) =>
-      noteParts.find((part) => part.toLowerCase().startsWith(`${label.toLowerCase()}:`))
-        ?.split(":")
-        .slice(1)
-        .join(":")
-        .trim() || "";
-
-    return {
-      id: patient._id,
-      name: `${patient.firstName || ""} ${patient.lastName || ""}`.trim(),
-      age: getValue("Age") || "Not provided",
-      gender: getValue("Gender") || patient.gender || "Not provided",
-      bloodGroup: getValue("Blood Group") || "Not provided",
-      phone: getValue("Phone") || patient.phone || "Not provided",
-      email: patient.email || "Not provided"
-    };
-  }, [selectedAppointment]);
-
-  const fallbackAppointments = useMemo(() => buildFallbackAppointments(authUser), [authUser]);
-
-  const filteredAppointments = useMemo(() => {
+  const relevantAppointments = useMemo(() => {
     const doctorId = String(doctorProfile?._id || "");
     const authEmail = String(authUser?.email || "").trim().toLowerCase();
     const authFullName = normalizeName(
       [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ") || authUser?.name || ""
     );
 
-    const matches = appointments.filter((appointment) => {
+    return appointments.filter((appointment) => {
       const appointmentDoctorId = String(appointment.doctor?._id || appointment.doctor || "");
       const doctorEmail = String(appointment.doctor?.email || "").trim().toLowerCase();
       const doctorName = normalizeName(appointment.doctor?.fullName || "");
@@ -136,148 +94,157 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
         return true;
       }
 
-      if (authFullName && doctorName && authFullName === doctorName) {
-        return true;
-      }
-
-      return false;
+      return authFullName && doctorName && authFullName === doctorName;
     });
-
-    return matches.length > 0 ? matches : fallbackAppointments;
-  }, [appointments, authUser, doctorProfile?._id, fallbackAppointments]);
+  }, [appointments, authUser, doctorProfile?._id]);
 
   const dashboardStats = useMemo(() => {
-    const today = new Date();
-    const isSameDay = (value) => {
-      const date = new Date(value);
-      return (
-        !Number.isNaN(date.getTime()) &&
-        date.getFullYear() === today.getFullYear() &&
-        date.getMonth() === today.getMonth() &&
-        date.getDate() === today.getDate()
-      );
-    };
+    const now = new Date();
+    const todayKey = now.toDateString();
+    const currentWeekStart = startOfWeek(now);
+    const currentWeekEnd = endOfWeek(now);
 
-    const upcomingCount = filteredAppointments.filter(
-      (appointment) => String(appointment.status || "").toLowerCase() !== "cancelled"
-    ).length;
-    const completedCount = filteredAppointments.filter(
-      (appointment) => String(appointment.status || "").toLowerCase() === "confirmed"
-    ).length;
+    const appointmentsToday = relevantAppointments.filter((appointment) => {
+      const appointmentDate = new Date(appointment.appointmentDate);
+      const status = String(appointment.status || "").toLowerCase();
+
+      return (
+        !Number.isNaN(appointmentDate.getTime()) &&
+        appointmentDate.toDateString() === todayKey &&
+        !["cancelled", "rejected"].includes(status)
+      );
+    }).length;
+
+    const upcomingThisWeek = relevantAppointments.filter((appointment) => {
+      const appointmentDate = new Date(appointment.appointmentDate);
+      const status = String(appointment.status || "").toLowerCase();
+
+      return (
+        !Number.isNaN(appointmentDate.getTime()) &&
+        appointmentDate >= now &&
+        appointmentDate >= currentWeekStart &&
+        appointmentDate < currentWeekEnd &&
+        ["pending", "confirmed"].includes(status)
+      );
+    }).length;
+
+    const completedThisWeek = relevantAppointments.filter((appointment) => {
+      const appointmentDate = new Date(appointment.appointmentDate);
+      const status = String(appointment.status || "").toLowerCase();
+
+      return (
+        !Number.isNaN(appointmentDate.getTime()) &&
+        appointmentDate >= currentWeekStart &&
+        appointmentDate < currentWeekEnd &&
+        status === "completed"
+      );
+    }).length;
+
     const patientCount = new Set(
-      filteredAppointments.map((appointment) => appointment.patient?._id || appointment.patient?.email || appointment._id)
+      relevantAppointments.map(
+        (appointment) => appointment.patient?._id || appointment.patient?.email || appointment._id
+      )
     ).size;
-    const todayCount = filteredAppointments.filter((appointment) => isSameDay(appointment.appointmentDate)).length;
 
     return [
-      { label: "Appointments Today", value: todayCount, icon: "calendar" },
-      { label: "Upcoming patients this week", value: upcomingCount, icon: "group" },
-      { label: "Completed This Week", value: completedCount, icon: "done" },
+      { label: "Appointments Today", value: appointmentsToday, icon: "calendar" },
+      { label: "Upcoming This Week", value: upcomingThisWeek, icon: "group" },
+      { label: "Completed This Week", value: completedThisWeek, icon: "done" },
       { label: "Total Patients", value: patientCount, icon: "patients" }
     ];
-  }, [filteredAppointments]);
+  }, [relevantAppointments]);
 
-  const visibleAppointments = filteredAppointments.slice(0, 3);
+  const upcomingAppointments = useMemo(() => {
+    const now = new Date();
 
-  const handleStatusChange = async (appointment, nextStatus) => {
-    setBusyId(appointment._id);
-    setFeedback("");
+    return relevantAppointments
+      .filter((appointment) => {
+        const appointmentDate = new Date(appointment.appointmentDate);
+        const status = String(appointment.status || "").toLowerCase();
 
-    try {
-      if (String(appointment._id).startsWith("demo-appointment-")) {
-        setAppointments((current) =>
-          current.length === 0
-            ? [{ ...appointment, status: nextStatus }]
-            : current.map((item) =>
-                item._id === appointment._id ? { ...item, status: nextStatus } : item
-              )
+        return (
+          !Number.isNaN(appointmentDate.getTime()) &&
+          appointmentDate > now &&
+          ["pending", "confirmed"].includes(status)
         );
-        setFeedback("Demo appointment status updated in the view.");
-        return;
-      }
+      })
+      .sort((left, right) => new Date(left.appointmentDate) - new Date(right.appointmentDate));
+  }, [relevantAppointments]);
 
-      const response = await updateAppointment(appointment._id, {
-        patient: appointment.patient?._id || appointment.patient,
-        doctor: appointment.doctor?._id || appointment.doctor,
-        department: appointment.department?._id || appointment.department,
-        appointmentDate: appointment.appointmentDate,
-        reason: appointment.reason,
-        notes: appointment.notes,
-        status: nextStatus,
-        respondedByRole: "doctor"
-      });
+  const visibleAppointments = upcomingAppointments.slice(0, 3);
 
-      await loadAppointments();
-      setFeedback(response.message || "Appointment status updated successfully.");
-    } catch (error) {
-      setFeedback(error.message);
-    } finally {
-      setBusyId("");
-    }
-  };
+  const selectedPatientRecord = useMemo(
+    () => findPatientRecordForAppointment(relevantAppointments, selectedAppointmentId),
+    [relevantAppointments, selectedAppointmentId]
+  );
 
-  const handleCancelAppointment = (appointment) => {
-    handleStatusChange(appointment, "cancelled");
-  };
-
-  const handleRescheduleAppointment = async (appointment) => {
-    const nextDate = window.prompt(
-      "Enter new appointment date (YYYY-MM-DD)",
-      formatIsoDate(appointment.appointmentDate)
-    );
-    if (!nextDate) {
+  const handleRescheduleSave = async ({ date, time }) => {
+    if (!rescheduleTarget) {
       return;
     }
 
-    const nextTime = window.prompt(
-      "Enter new appointment time (HH:MM)",
-      formatTimeInput(appointment.appointmentDate)
-    );
-    if (!nextTime) {
+    if (!date) {
+      setRescheduleError("Please choose a new appointment date.");
       return;
     }
 
-    const updatedDate = new Date(`${nextDate}T${nextTime}:00`);
+    if (!time) {
+      setRescheduleError("Please choose a new appointment time.");
+      return;
+    }
+
+    const updatedDate = new Date(`${date}T${time}:00`);
+
     if (Number.isNaN(updatedDate.getTime())) {
-      setFeedback("Please enter a valid date and time.");
+      setRescheduleError("Please enter a valid appointment date and time.");
       return;
     }
 
-    setBusyId(appointment._id);
+    setBusyId(rescheduleTarget._id);
+    setRescheduleError("");
     setFeedback("");
 
     try {
-      if (String(appointment._id).startsWith("demo-appointment-")) {
-        setAppointments((current) =>
-          current.length === 0
-            ? [{ ...appointment, appointmentDate: updatedDate.toISOString() }]
-            : current.map((item) =>
-                item._id === appointment._id
-                  ? { ...item, appointmentDate: updatedDate.toISOString() }
-                  : item
-              )
-        );
-        setFeedback("Demo appointment rescheduled in the view.");
-        return;
-      }
-
-      const response = await updateAppointment(appointment._id, {
-        patient: appointment.patient?._id || appointment.patient,
-        doctor: appointment.doctor?._id || appointment.doctor,
-        department: appointment.department?._id || appointment.department,
+      const response = await updateAppointment(rescheduleTarget._id, {
+        patient: rescheduleTarget.patient?._id || rescheduleTarget.patient,
+        doctor: rescheduleTarget.doctor?._id || rescheduleTarget.doctor,
+        department: rescheduleTarget.department?._id || rescheduleTarget.department,
         appointmentDate: updatedDate.toISOString(),
-        reason: appointment.reason,
-        notes: appointment.notes,
-        status: appointment.status || "pending",
+        reason: rescheduleTarget.reason,
+        notes: rescheduleTarget.notes,
+        status: "pending",
         respondedByRole: "doctor"
       });
 
       await loadAppointments();
       setFeedback(response.message || "Appointment rescheduled successfully.");
+      setRescheduleTarget(null);
     } catch (error) {
-      setFeedback(error.message);
+      setRescheduleError(error.message);
     } finally {
       setBusyId("");
+    }
+  };
+
+  const handleSaveFeedback = async (appointmentId, payload) => {
+    setFeedbackBusy(true);
+    setModalFeedbackError("");
+    setModalFeedbackSuccess("");
+
+    try {
+      const response = await addAppointmentFeedback(appointmentId, {
+        ...payload,
+        createdByRole: "doctor"
+      });
+
+      await loadAppointments();
+      setModalFeedbackSuccess(response.message || "Feedback added successfully.");
+      return true;
+    } catch (error) {
+      setModalFeedbackError(error.message);
+      return false;
+    } finally {
+      setFeedbackBusy(false);
     }
   };
 
@@ -312,12 +279,22 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
               <article className="doctor-appointment-card" key={appointment._id}>
                 <div className="doctor-appointment-card__main">
                   <div className="doctor-appointment-card__patient">
-                    <h4>
-                      {appointment.patient?.firstName} {appointment.patient?.lastName}
-                    </h4>
+                    <div className="doctor-appointment-card__header">
+                      <h4>
+                        {appointment.patient?.firstName} {appointment.patient?.lastName}
+                      </h4>
+                      <span className={`doctor-status doctor-status--${String(appointment.status || "pending").toLowerCase()}`}>
+                        {String(appointment.status || "pending")}
+                      </span>
+                    </div>
                     <p>{appointment.reason || "General consultation"}</p>
                     <span>
-                      {formatIsoDate(appointment.appointmentDate)} at {formatTime(appointment.appointmentDate)}
+                      {new Date(appointment.appointmentDate).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric"
+                      })}{" "}
+                      at {formatTime(appointment.appointmentDate)}
                     </span>
                   </div>
                 </div>
@@ -326,7 +303,10 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
                   <button
                     type="button"
                     className="doctor-card-action doctor-card-action--reschedule"
-                    onClick={() => handleRescheduleAppointment(appointment)}
+                    onClick={() => {
+                      setRescheduleTarget(appointment);
+                      setRescheduleError("");
+                    }}
                     disabled={busyId === appointment._id}
                   >
                     <span className="doctor-card-action__icon" aria-hidden="true">+</span>
@@ -335,18 +315,12 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
 
                   <button
                     type="button"
-                    className="doctor-card-action doctor-card-action--cancel"
-                    onClick={() => handleCancelAppointment(appointment)}
-                    disabled={busyId === appointment._id}
-                  >
-                    <span className="doctor-card-action__icon" aria-hidden="true">x</span>
-                    {busyId === appointment._id ? "Working..." : "Cancel"}
-                  </button>
-
-                  <button
-                    type="button"
                     className="doctor-card-action doctor-card-action--view"
-                    onClick={() => setSelectedAppointment(appointment)}
+                    onClick={() => {
+                      setSelectedAppointmentId(appointment._id);
+                      setModalFeedbackError("");
+                      setModalFeedbackSuccess("");
+                    }}
                   >
                     View
                   </button>
@@ -355,12 +329,39 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
             ))}
           </div>
         ) : (
-          <div className="doctor-empty-cell">No appointments available.</div>
+          <div className="doctor-empty-cell">No upcoming appointments available.</div>
         )}
       </div>
 
-      {mappedPatientForModal ? (
-        <PatientDetailsModal patient={mappedPatientForModal} onClose={() => setSelectedAppointment(null)} />
+      {selectedPatientRecord ? (
+        <PatientDetailsModal
+          patient={selectedPatientRecord}
+          initialAppointmentId={selectedAppointmentId}
+          feedbackBusy={feedbackBusy}
+          feedbackError={modalFeedbackError}
+          feedbackSuccess={modalFeedbackSuccess}
+          onSaveFeedback={handleSaveFeedback}
+          onClose={() => {
+            setSelectedAppointmentId("");
+            setModalFeedbackError("");
+            setModalFeedbackSuccess("");
+          }}
+        />
+      ) : null}
+
+      {rescheduleTarget ? (
+        <RescheduleAppointmentModal
+          appointment={rescheduleTarget}
+          busy={busyId === rescheduleTarget._id}
+          errorMessage={rescheduleError}
+          onClose={() => {
+            if (busyId !== rescheduleTarget._id) {
+              setRescheduleTarget(null);
+              setRescheduleError("");
+            }
+          }}
+          onSave={handleRescheduleSave}
+        />
       ) : null}
     </div>
   );

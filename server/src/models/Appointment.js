@@ -1,5 +1,39 @@
 import mongoose from "mongoose";
 
+const appointmentFeedbackSchema = new mongoose.Schema(
+  {
+    diagnosis: {
+      type: String,
+      trim: true,
+      required: [true, "Feedback diagnosis is required."],
+      minlength: [3, "Feedback diagnosis must be at least 3 characters long."],
+      maxlength: [300, "Feedback diagnosis cannot be longer than 300 characters."]
+    },
+    remarks: {
+      type: String,
+      trim: true,
+      maxlength: [800, "Feedback remarks cannot be longer than 800 characters."]
+    },
+    prescription: {
+      type: String,
+      trim: true,
+      maxlength: [800, "Feedback prescription cannot be longer than 800 characters."]
+    },
+    createdByRole: {
+      type: String,
+      enum: ["doctor", "admin", "system"],
+      default: "doctor"
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  {
+    _id: true
+  }
+);
+
 const appointmentSchema = new mongoose.Schema(
   {
     patient: {
@@ -53,6 +87,10 @@ const appointmentSchema = new mongoose.Schema(
     },
     respondedAt: {
       type: Date
+    },
+    feedbackEntries: {
+      type: [appointmentFeedbackSchema],
+      default: []
     }
   },
   {

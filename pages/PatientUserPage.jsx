@@ -35,19 +35,6 @@ function PatientUserPage({ authUser }) {
     gender: authUser?.gender || "Not provided"
   };
 
-  const fallbackHistory = useMemo(
-    () => [
-      {
-        _id: "demo-history-1",
-        doctor: { fullName: "Doctor assignment pending" },
-        appointmentDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        status: "pending",
-        patient: { email: authUser?.email || "" }
-      }
-    ],
-    [authUser?.email]
-  );
-
   useEffect(() => {
     let active = true;
 
@@ -75,12 +62,16 @@ function PatientUserPage({ authUser }) {
           return false;
         });
 
-        setAppointmentHistory(matchedAppointments.length > 0 ? matchedAppointments : fallbackHistory);
+        setAppointmentHistory(
+          matchedAppointments.sort(
+            (left, right) => new Date(right.appointmentDate || 0) - new Date(left.appointmentDate || 0)
+          )
+        );
         setHistoryFeedback("");
       } catch (error) {
         if (active) {
           setHistoryFeedback(error.message);
-          setAppointmentHistory(fallbackHistory);
+          setAppointmentHistory([]);
         }
       }
     };
@@ -90,7 +81,7 @@ function PatientUserPage({ authUser }) {
     return () => {
       active = false;
     };
-  }, [authUser, patientEmail, fallbackHistory]);
+  }, [authUser, patientEmail]);
 
   const refreshHistory = async () => {
     const appointments = await fetchAppointments();
@@ -111,7 +102,11 @@ function PatientUserPage({ authUser }) {
       return false;
     });
 
-    setAppointmentHistory(matchedAppointments.length > 0 ? matchedAppointments : fallbackHistory);
+    setAppointmentHistory(
+      matchedAppointments.sort(
+        (left, right) => new Date(right.appointmentDate || 0) - new Date(left.appointmentDate || 0)
+      )
+    );
   };
 
   const filteredHistory = useMemo(() => {
@@ -228,11 +223,20 @@ function PatientUserPage({ authUser }) {
 
             {filteredHistory.length > 0 ? (
               <div className="patient-history-list">
-                {filteredHistory.map((appointment) => (
+                {filteredHistory.map((appointment, index) => (
                   <div key={appointment._id} className="patient-history-row">
                     <div>
                       <strong>{appointment.doctor?.fullName || "Doctor not assigned"}</strong>
                       <span>{formatAppointmentDate(appointment.appointmentDate)}</span>
+                      <span>{`Visit #${filteredHistory.length - index}`}</span>
+                      {Array.isArray(appointment.feedbackEntries) && appointment.feedbackEntries.length > 0 ? (
+                        <span>
+                          Latest Feedback:{" "}
+                          {appointment.feedbackEntries[appointment.feedbackEntries.length - 1]?.diagnosis || "Added"}
+                        </span>
+                      ) : (
+                        <span>No doctor feedback added yet.</span>
+                      )}
                     </div>
 
                     <div

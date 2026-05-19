@@ -329,6 +329,14 @@
   font-weight: 500;
 }
 
+.doctor-appointment-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
 .doctor-appointment-card__patient p {
   margin: 0 0 6px;
   color: #1f2937;
@@ -505,6 +513,250 @@
   color: #2563eb;
 }
 
+.doctor-form-dialog {
+  width: min(540px, 100%);
+  display: grid;
+  gap: 18px;
+}
+
+.doctor-form-dialog--wide {
+  width: min(820px, 100%);
+  max-height: min(88vh, 860px);
+  overflow: auto;
+}
+
+.doctor-form-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.doctor-form-dialog__close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(76, 116, 194, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #334155;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.doctor-form-dialog__summary {
+  padding: 14px 16px;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  border-radius: 18px;
+  background: rgba(239, 248, 255, 0.74);
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.doctor-form-dialog__fields {
+  display: grid;
+  gap: 14px;
+}
+
+.doctor-form-dialog__fields--split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.doctor-form-dialog__field {
+  display: grid;
+  gap: 8px;
+}
+
+.doctor-form-dialog__field span {
+  color: #10233d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.doctor-form-dialog__field input,
+.doctor-form-dialog__field select,
+.doctor-form-dialog__field textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid rgba(125, 211, 252, 0.62);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #10233d;
+  font-size: 0.94rem;
+}
+
+.doctor-form-dialog__field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.doctor-patient-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  border-radius: 22px;
+  background: rgba(248, 252, 255, 0.84);
+}
+
+.doctor-patient-summary div {
+  display: grid;
+  gap: 4px;
+}
+
+.doctor-patient-summary span {
+  color: #617694;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.doctor-patient-summary strong {
+  color: #10233d;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.doctor-patient-summary__item--email {
+  grid-column: 1 / -1;
+}
+
+.doctor-patient-summary__item--blood strong {
+  white-space: nowrap;
+}
+
+.doctor-patient-history__header h3 {
+  margin: 0;
+  color: #10233d;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.doctor-patient-history__header--actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doctor-patient-history {
+  display: grid;
+  gap: 16px;
+}
+
+.doctor-history-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(125, 211, 252, 0.48);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.doctor-history-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.doctor-history-card__header p {
+  margin: 0 0 6px;
+  color: #0ea5e9;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.doctor-history-card__header h4 {
+  margin: 0;
+  color: #10233d;
+  font-size: 1rem;
+}
+
+.doctor-history-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: #4b5563;
+  font-size: 0.86rem;
+}
+
+.doctor-history-card__section {
+  display: grid;
+  gap: 6px;
+}
+
+.doctor-history-card__section span,
+.doctor-history-feedback-head strong {
+  color: #10233d;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.doctor-history-card__section p,
+.doctor-history-feedback-item p,
+.doctor-history-card__empty {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.doctor-history-feedback-head {
+  display: block;
+}
+
+.doctor-history-feedback-list {
+  display: grid;
+  gap: 12px;
+}
+
+.doctor-history-feedback-item {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(239, 248, 255, 0.74);
+}
+
+.doctor-history-feedback-item__meta {
+  margin-bottom: 8px;
+  color: #0ea5e9;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.doctor-history-feedback-form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  border-radius: 20px;
+  background: rgba(248, 252, 255, 0.9);
+}
+
+.doctor-history-feedback-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.doctor-modal-success {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  border-radius: 16px;
+  background: rgba(220, 252, 231, 0.72);
+  color: #166534;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .patients-table-container {
   border-radius: 16px;
 }
@@ -517,6 +769,21 @@
 
 .patients-col-patient {
   width: 38%;
+}
+
+@media (max-width: 900px) {
+  .doctor-form-dialog__fields--split,
+  .doctor-patient-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-history-card__header,
+  .doctor-history-feedback-head,
+  .doctor-appointment-card__header,
+  .doctor-patient-history__header--actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .patients-col-age,

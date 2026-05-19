@@ -48,6 +48,16 @@ const iconPathMap = Object.fromEntries(
 const normalizeDepartmentName = (value = "") =>
   String(value).trim().toLowerCase();
 
+const createDepartmentPlaceholder = (name = "Department") =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="18" fill="#e0f2fe" />
+      <text x="32" y="39" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">
+        ${String(name).trim().charAt(0).toUpperCase() || "D"}
+      </text>
+    </svg>
+  `)}`;
+
 const resolveDepartmentIcon = (department) =>
   iconPathMap[department.icon] || department.icon || iconMap[normalizeDepartmentName(department.name)] || null;
 
@@ -248,6 +258,10 @@ const DepartmentsView = () => {
                     src={dept.iconImage}
                     alt={dept.name}
                     style={{ width: "32px", height: "32px", objectFit: "contain" }}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = createDepartmentPlaceholder(dept.name);
+                    }}
                   />
                 ) : (
                   <span>{dept.name?.charAt(0)?.toUpperCase()}</span>

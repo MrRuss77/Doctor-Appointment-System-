@@ -144,7 +144,7 @@ const buildDoctorPayload = async (body, session) => {
     qualification: String(body.qualification || "").trim(),
     nmcNumber: String(body.nmcNumber || "").trim(),
     experienceYears: Number(body.experienceYears || 0),
-    availabilityText: String(body.availabilityText || "No availability added yet").trim(),
+    availabilityText: "No availability added yet",
     image: savedImage ? "" : String(body.image || "").trim(),
     photoAsset: savedImage?._id || undefined,
     consultationFee: Number(body.consultationFee || 0),
@@ -536,7 +536,10 @@ router.post(
 router.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const doctor = await Doctor.findByIdAndUpdate(req.params.id, req.body, {
+    const updatePayload = { ...req.body };
+    delete updatePayload.availabilityText;
+
+    const doctor = await Doctor.findByIdAndUpdate(req.params.id, updatePayload, {
       new: true,
       runValidators: true
     }).populate("department").populate("user");

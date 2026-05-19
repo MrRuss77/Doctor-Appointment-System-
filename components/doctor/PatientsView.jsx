@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { PatientDetailsModal } from "./DoctorModals";
-import { fetchAppointments } from "../../src/api/client";
+import { addAppointmentFeedback, fetchAppointments } from "../../src/api/client";
+import { buildPatientRecords } from "./patientHistory";
 
 const normalizeName = (value = "") =>
   String(value)
@@ -8,42 +9,29 @@ const normalizeName = (value = "") =>
     .trim()
     .toLowerCase();
 
-const fallbackPatientHistory = [
-  {
-    date: "2026-04-25",
-    visitLabel: "Visit #2",
-    diagnosis: "Hypertension",
-    remarks: "Patient complained of occasional chest discomfort. ECG performed, results normal.",
-    prescription: "Amlodipine 5mg - Once daily, Aspirin 75mg - Once daily"
-  },
-  {
-    date: "2026-03-25",
-    visitLabel: "Visit #1",
-    diagnosis: "Hypertension",
-    remarks: "Initial diagnosis.",
-    prescription: "Lifestyle changes advised with blood pressure monitoring."
-  }
-];
-
 const PatientsView = ({ authUser, doctorProfile }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [openMenuId, setOpenMenuId] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [modalFeedbackError, setModalFeedbackError] = useState("");
+  const [modalFeedbackSuccess, setModalFeedbackSuccess] = useState("");
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
+
+  const loadAppointments = async () => {
+    const data = await fetchAppointments(doctorProfile?._id ? { doctor: doctorProfile._id } : {});
+    setAppointments(Array.isArray(data) ? data : []);
+  };
 
   useEffect(() => {
     let active = true;
 
-    fetchAppointments(doctorProfile?._id ? { doctor: doctorProfile._id } : {})
-      .then((data) => {
-        if (active) {
-          setAppointments(data || []);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setAppointments([]);
-        }
-      });
+    loadAppointments().catch((error) => {
+      if (active) {
+        setFeedback(error.message);
+        setAppointments([]);
+      }
+    });
 
     return () => {
       active = false;
@@ -62,26 +50,27 @@ const PatientsView = ({ authUser, doctorProfile }) => {
     };
   }, []);
 
-  const copyPatientDetail = async (value) => {
+  const copyPatientDetail = async (value, label) => {
     if (!value || value === "Not provided") {
       return;
     }
 
     try {
       await navigator.clipboard.writeText(value);
+      setFeedback(`${label} copied successfully.`);
     } catch (_error) {
-      window.prompt("Copy this value", value);
+      setFeedback(`Clipboard access is unavailable. Please copy this ${label.toLowerCase()} manually: ${value}`);
     }
   };
 
-  const patients = useMemo(() => {
+  const relevantAppointments = useMemo(() => {
     const doctorId = String(doctorProfile?._id || "");
     const authEmail = String(authUser?.email || "").trim().toLowerCase();
     const authFullName = normalizeName(
       [authUser?.firstName, authUser?.lastName].filter(Boolean).join(" ") || authUser?.name || ""
     );
 
-    const relevantAppointments = appointments.filter((appointment) => {
+    return appointments.filter((appointment) => {
       const appointmentDoctorId = String(appointment.doctor?._id || appointment.doctor || "");
       const doctorEmail = String(appointment.doctor?.email || "").trim().toLowerCase();
       const doctorName = normalizeName(appointment.doctor?.fullName || "");
@@ -94,63 +83,55 @@ const PatientsView = ({ authUser, doctorProfile }) => {
         return true;
       }
 
-      if (authFullName && doctorName && authFullName === doctorName) {
-        return true;
-      }
-
-      return false;
+      return authFullName && doctorName && authFullName === doctorName;
     });
-
-    const patientMap = new Map();
-
-    relevantAppointments.forEach((appointment) => {
-      const noteParts = String(appointment.notes || "")
-        .split("|")
-        .map((part) => part.trim());
-      const getValue = (label) =>
-        noteParts.find((part) => part.toLowerCase().startsWith(`${label.toLowerCase()}:`))
-          ?.split(":")
-          .slice(1)
-          .join(":")
-          .trim() || "";
-
-      const patient = appointment.patient || {};
-      const id = patient._id || patient.email || appointment._id;
-
-      if (!patientMap.has(id)) {
-        patientMap.set(id, {
-          id,
-          name: `${patient.firstName || ""} ${patient.lastName || ""}`.trim() || "Patient",
-          age: getValue("Age") || "Not provided",
-          gender: getValue("Gender") || patient.gender || "Not provided",
-          bloodGroup: getValue("Blood Group") || "Not provided",
-          phone: getValue("Phone") || patient.phone || "Not provided",
-          email: patient.email || "Not provided",
-          history: []
-        });
-      }
-
-      const patientRecord = patientMap.get(id);
-      patientRecord.history.push({
-        date: appointment.appointmentDate
-          ? new Date(appointment.appointmentDate).toISOString().slice(0, 10)
-          : "Not scheduled",
-        visitLabel: `Visit #${patientRecord.history.length + 1}`,
-        diagnosis: appointment.reason || "General consultation",
-        remarks: appointment.notes || "No remarks provided.",
-        prescription: appointment.prescription || appointment.treatment || "Prescription not added yet."
-      });
-    });
-
-    return Array.from(patientMap.values()).map((patient) => ({
-      ...patient,
-      history: patient.history.length > 0 ? patient.history.reverse() : fallbackPatientHistory
-    }));
   }, [appointments, authUser, doctorProfile?._id]);
+
+  const patients = useMemo(() => buildPatientRecords(relevantAppointments), [relevantAppointments]);
+
+  const refreshSelectedPatient = (patientId, nextAppointments) => {
+    const nextPatients = buildPatientRecords(nextAppointments);
+    const nextPatient = nextPatients.find((patient) => String(patient.id) === String(patientId)) || null;
+    setSelectedPatient(nextPatient);
+  };
+
+  const handleSaveFeedback = async (appointmentId, payload) => {
+    if (!selectedPatient) {
+      return false;
+    }
+
+    setFeedbackBusy(true);
+    setModalFeedbackError("");
+    setModalFeedbackSuccess("");
+
+    try {
+      await addAppointmentFeedback(appointmentId, {
+        ...payload,
+        createdByRole: "doctor"
+      });
+
+      const nextAppointments = await fetchAppointments(
+        doctorProfile?._id ? { doctor: doctorProfile._id } : {}
+      );
+      const normalizedAppointments = Array.isArray(nextAppointments) ? nextAppointments : [];
+
+      setAppointments(normalizedAppointments);
+      refreshSelectedPatient(selectedPatient.id, normalizedAppointments);
+      setModalFeedbackSuccess("Feedback added successfully.");
+      return true;
+    } catch (error) {
+      setModalFeedbackError(error.message);
+      return false;
+    } finally {
+      setFeedbackBusy(false);
+    }
+  };
 
   return (
     <div className="patients-view">
       <h2 className="doctor-view-title">Patient List</h2>
+
+      {feedback ? <p className="doctor-feedback" style={{ display: "block" }}>{feedback}</p> : null}
       
       <div className="manage-list-card">
         <div className="manage-list-header manage-list-header--appointments">
@@ -201,6 +182,8 @@ const PatientsView = ({ authUser, doctorProfile }) => {
                           className="patient-actions-menu__item"
                           onClick={() => {
                             setSelectedPatient(pt);
+                            setModalFeedbackError("");
+                            setModalFeedbackSuccess("");
                             setOpenMenuId("");
                           }}
                         >
@@ -210,7 +193,7 @@ const PatientsView = ({ authUser, doctorProfile }) => {
                           type="button"
                           className="patient-actions-menu__item"
                           onClick={async () => {
-                            await copyPatientDetail(pt.phone);
+                            await copyPatientDetail(pt.phone, "Phone");
                             setOpenMenuId("");
                           }}
                         >
@@ -220,7 +203,7 @@ const PatientsView = ({ authUser, doctorProfile }) => {
                           type="button"
                           className="patient-actions-menu__item"
                           onClick={async () => {
-                            await copyPatientDetail(pt.email);
+                            await copyPatientDetail(pt.email, "Email");
                             setOpenMenuId("");
                           }}
                         >
@@ -238,7 +221,20 @@ const PatientsView = ({ authUser, doctorProfile }) => {
         </div>
       </div>
 
-      {selectedPatient && <PatientDetailsModal patient={selectedPatient} onClose={() => setSelectedPatient(null)} />}
+      {selectedPatient ? (
+        <PatientDetailsModal
+          patient={selectedPatient}
+          feedbackBusy={feedbackBusy}
+          feedbackError={modalFeedbackError}
+          feedbackSuccess={modalFeedbackSuccess}
+          onSaveFeedback={handleSaveFeedback}
+          onClose={() => {
+            setSelectedPatient(null);
+            setModalFeedbackError("");
+            setModalFeedbackSuccess("");
+          }}
+        />
+      ) : null}
     </div>
   );
 };

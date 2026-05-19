@@ -96,6 +96,8 @@ const formatTimeLabel = (timeValue) => {
   return `${String(normalizedHours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${suffix}`;
 };
 
+const getSlotKey = (slot) => String(slot?._id || slot?.id || "");
+
 const groupSlots = (slots = []) => {
   const grouped = slots.reduce((accumulator, slot) => {
     const weekday = getWeekdayLabel(slot.date);
@@ -106,6 +108,7 @@ const groupSlots = (slots = []) => {
 
     accumulator.get(weekday).push({
       ...slot,
+      slotKey: getSlotKey(slot),
       time: `${formatTimeLabel(slot.startTime)} - ${formatTimeLabel(slot.endTime)}`,
       status: slot.isAvailable === false ? "Unavailable" : "Available"
     });
@@ -183,18 +186,19 @@ const AvailabilityView = ({ doctorProfile }) => {
       return;
     }
 
-    const slot = flattenedSlots.find((item) => item._id === slotId || item.id === slotId);
+    const normalizedSlotId = String(slotId);
+    const slot = flattenedSlots.find((item) => String(item.slotKey || item._id || item.id) === normalizedSlotId);
 
     if (!slot) {
       setFeedback("Availability slot not found.");
       return;
     }
 
-    setBusyId(slotId);
+    setBusyId(normalizedSlotId);
     setFeedback("");
 
     try {
-      const response = await updateDoctorAvailabilitySlot(doctorId, slotId, {
+      const response = await updateDoctorAvailabilitySlot(doctorId, normalizedSlotId, {
         date: slot.date,
         startTime: slot.startTime,
         endTime: slot.endTime,
@@ -273,8 +277,8 @@ const AvailabilityView = ({ doctorProfile }) => {
 
               <div className="availability-slots">
                 {day.slots.map((slot) => {
-                  const slotId = slot._id || slot.id;
-                  const isBusy = busyId === slotId;
+                    const slotId = slot.slotKey || slot._id || slot.id;
+                    const isBusy = busyId === slotId;
 
                   return (
                     <div key={slotId} className="availability-slot">

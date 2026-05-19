@@ -197,6 +197,12 @@ export const updateAppointment = async (appointmentId, body) =>
     body: JSON.stringify(body)
   });
 
+export const addAppointmentFeedback = async (appointmentId, body) =>
+  request(`/appointments/${appointmentId}/feedback`, {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+
 export const respondToAppointment = async (appointmentId, body) =>
   request(`/appointments/${appointmentId}/respond`, {
     method: "PUT",

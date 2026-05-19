@@ -29,7 +29,6 @@ const emptyDoctorForm = {
   qualification: "",
   nmcNumber: "",
   experienceYears: "",
-  availabilityText: "",
   consultationFee: "",
   imageDataUrl: "",
   imagePreviewName: ""
@@ -193,7 +192,6 @@ const ManageDoctorsView = () => {
         qualification: newDoctor.qualification.trim(),
         nmcNumber: newDoctor.nmcNumber.trim(),
         experienceYears: newDoctor.experienceYears ? Number(newDoctor.experienceYears) : 0,
-        availabilityText: newDoctor.availabilityText.trim(),
         consultationFee: newDoctor.consultationFee ? Number(newDoctor.consultationFee) : 0,
         imageDataUrl: newDoctor.imageDataUrl
       });
@@ -299,7 +297,10 @@ const ManageDoctorsView = () => {
           <div className="doctor-create-panel__header">
             <div>
               <h3>Add Doctor</h3>
-              <p>New doctors are saved to MongoDB and receive a linked doctor login account.</p>
+              <p>
+                New doctors are saved to MongoDB and receive a linked doctor login account.
+                Availability is managed automatically from the doctor's schedule.
+              </p>
             </div>
             <button type="button" className="admin-btn-pill" onClick={resetAddForm}>
               Close
@@ -400,15 +401,6 @@ const ManageDoctorsView = () => {
                 value={newDoctor.consultationFee}
                 onChange={(event) => handleNewDoctorChange("consultationFee", event.target.value)}
                 placeholder="1500"
-              />
-            </label>
-            <label className="admin-field admin-field--wide">
-              <span>Availability text</span>
-              <input
-                className="admin-input"
-                value={newDoctor.availabilityText}
-                onChange={(event) => handleNewDoctorChange("availabilityText", event.target.value)}
-                placeholder="No availability added yet"
               />
             </label>
             <label className="admin-field admin-field--wide">
@@ -588,7 +580,9 @@ const ManageDoctorsView = () => {
                                   await navigator.clipboard.writeText(doctor.email || "");
                                   setFeedback("Doctor email copied.");
                                 } catch (_error) {
-                                  window.prompt("Copy doctor email", doctor.email || "");
+                                  setFeedback(
+                                    `Clipboard access is unavailable. Please copy this email manually: ${doctor.email || "No email"}`
+                                  );
                                 }
                                 setOpenMenuId("");
                               }}

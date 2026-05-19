@@ -36,6 +36,16 @@ const nameIconMap = {
   ent: entImg
 };
 
+const createDepartmentPlaceholder = (name = "Department") =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="24" fill="#e0f2fe" />
+      <text x="48" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#0f172a">
+        ${String(name).trim().charAt(0).toUpperCase() || "D"}
+      </text>
+    </svg>
+  `)}`;
+
 const departmentData = [
   { name: "Anesthiology", image: anesthesiologyImg },
   { name: "Dentist", image: dentistImg },
@@ -134,7 +144,15 @@ const Departments = ({ onSelectDepartment }) => {
             onMouseOut={(e) => e.currentTarget.style.boxShadow = "none"}
           >
             {dept.image ? (
-              <img src={dept.image} alt={dept.name} style={{ width: "65px", height: "65px", objectFit: "contain" }} />
+              <img
+                src={dept.image}
+                alt={dept.name}
+                style={{ width: "65px", height: "65px", objectFit: "contain" }}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = createDepartmentPlaceholder(dept.name);
+                }}
+              />
             ) : (
               <span style={{ width: "65px", height: "65px", display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "18px", background: "#e0f2fe", color: "#0f172a", fontSize: "24px", fontWeight: "800" }}>
                 {dept.name?.charAt(0)?.toUpperCase()}
