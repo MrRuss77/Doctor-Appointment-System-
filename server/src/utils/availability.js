@@ -49,13 +49,18 @@ export const validateAvailabilitySlot = (slot) => {
 
 export const normalizeAvailabilitySlots = (slots = []) =>
   slots
-    .map((slot) => ({
-      date: String(slot.date),
-      startTime: String(slot.startTime),
-      endTime: String(slot.endTime),
-      isAvailable: slot.isAvailable !== false,
-      note: String(slot.note || "").trim()
-    }))
+    .map((slot) => {
+      const slotId = slot?._id || slot?.id;
+
+      return {
+        ...(slotId ? { _id: slotId } : {}),
+        date: String(slot.date),
+        startTime: String(slot.startTime),
+        endTime: String(slot.endTime),
+        isAvailable: slot.isAvailable !== false,
+        note: String(slot.note || "").trim()
+      };
+    })
     .sort((left, right) => {
       if (left.date !== right.date) {
         return left.date.localeCompare(right.date);
@@ -63,6 +68,34 @@ export const normalizeAvailabilitySlots = (slots = []) =>
 
       return toMinutes(left.startTime) - toMinutes(right.startTime);
     });
+
+export const isAvailabilitySlotInFuture = (slot, referenceDate = new Date()) => {
+  if (!slot?.date || !slot?.endTime) {
+    return false;
+  }
+
+  const referenceKey = formatDateKey(referenceDate);
+
+  if (slot.date > referenceKey) {
+    return true;
+  }
+
+  if (slot.date < referenceKey) {
+    return false;
+  }
+
+  const referenceMinutes = referenceDate.getHours() * 60 + referenceDate.getMinutes();
+  const slotStartMinutes = toMinutes(slot.startTime);
+  const nextBookingMinutes =
+    slotStartMinutes <= referenceMinutes
+      ? Math.floor(referenceMinutes / 30) * 30 + 30
+      : slotStartMinutes;
+
+  return nextBookingMinutes < toMinutes(slot.endTime);
+};
+
+export const filterFutureAvailabilitySlots = (slots = [], referenceDate = new Date()) =>
+  normalizeAvailabilitySlots(slots).filter((slot) => isAvailabilitySlotInFuture(slot, referenceDate));
 
 export const hasOverlappingAvailabilitySlots = (slots = []) => {
   const normalizedSlots = normalizeAvailabilitySlots(slots);
@@ -96,17 +129,40 @@ export const getNextAvailabilityText = (slots = [], referenceDate = new Date()) 
       return true;
     }
 
-    return slot.date === referenceKey && toMinutes(slot.endTime) > referenceMinutes;
+    if (slot.date !== referenceKey) {
+      return false;
+    }
+
+    const slotStartMinutes = toMinutes(slot.startTime);
+    const nextBookingMinutes =
+      slotStartMinutes <= referenceMinutes
+        ? Math.floor(referenceMinutes / 30) * 30 + 30
+        : slotStartMinutes;
+
+    return nextBookingMinutes < toMinutes(slot.endTime);
   });
 
   if (!nextSlot) {
     return "No availability added yet";
   }
 
-  return `Next slot: ${formatTimeLabel(nextSlot.startTime)} on ${nextSlot.date}`;
+  const slotStartMinutes = toMinutes(nextSlot.startTime);
+  const nextBookingMinutes =
+    nextSlot.date === referenceKey && slotStartMinutes <= referenceMinutes
+      ? Math.floor(referenceMinutes / 30) * 30 + 30
+      : slotStartMinutes;
+  const nextBookingTime = formatTimeLabel(
+    `${String(Math.floor(nextBookingMinutes / 60)).padStart(2, "0")}:${String(nextBookingMinutes % 60).padStart(2, "0")}`
+  );
+
+  return `Next slot: ${nextBookingTime} on ${nextSlot.date}`;
 };
 
 export const isAppointmentWithinAvailability = (appointmentDate, slots = []) => {
+  if (appointmentDate <= new Date()) {
+    return false;
+  }
+
   const appointmentKey = formatDateKey(appointmentDate);
   const appointmentMinutes = appointmentDate.getHours() * 60 + appointmentDate.getMinutes();
 

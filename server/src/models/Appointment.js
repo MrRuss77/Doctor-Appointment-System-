@@ -83,7 +83,7 @@ const appointmentSchema = new mongoose.Schema(
     },
     respondedByRole: {
       type: String,
-      enum: ["admin", "doctor", "system"]
+      enum: ["admin", "doctor", "patient", "system"]
     },
     respondedAt: {
       type: Date

@@ -39,6 +39,7 @@ CLIENT_URLS=http://localhost:5173,http://127.0.0.1:5173
 GMAIL_USER=your-email@example.com
 GMAIL_APP_PASSWORD=your-app-password
 GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 The backend reads the project root `.env` for all server commands.

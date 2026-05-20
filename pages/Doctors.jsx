@@ -390,6 +390,12 @@ const fromMinutes = (totalMinutes) => {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
+const formatDateKey = (date) => [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, "0"),
+  String(date.getDate()).padStart(2, "0")
+].join("-");
+
 const buildProfilePrefill = (user) => {
   if (!user) {
     return {};
@@ -580,24 +586,38 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       return new Map();
     }
 
+    const now = new Date();
+    const todayKey = formatDateKey(now);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
     return selectedDoctorSlots.reduce((map, slot) => {
       if (!slot?.date || !slot?.startTime || !slot?.endTime) {
         return map;
       }
 
-      const existing = map.get(slot.date) || [];
+      if (slot.date < todayKey) {
+        return map;
+      }
+
       const startMinutes = toMinutes(slot.startTime);
       const endMinutes = toMinutes(slot.endTime);
 
       if (
         Number.isNaN(startMinutes) ||
         Number.isNaN(endMinutes) ||
-        startMinutes >= endMinutes
+        startMinutes >= endMinutes ||
+        (slot.date === todayKey && endMinutes <= currentMinutes)
       ) {
         return map;
       }
 
+      const existing = map.get(slot.date) || [];
+
       for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+        if (slot.date === todayKey && minutes <= currentMinutes) {
+          continue;
+        }
+
         const time = fromMinutes(minutes);
         const key = `${slot.date}T${time}`;
         existing.push({
@@ -611,8 +631,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         });
       }
 
-      existing.sort((left, right) => left.time.localeCompare(right.time));
-      map.set(slot.date, existing);
+      if (existing.length > 0) {
+        existing.sort((left, right) => left.time.localeCompare(right.time));
+        map.set(slot.date, existing);
+      }
+
       return map;
     }, new Map());
   }, [selectedDoctorSlots, bookedSlotKeys]);
@@ -952,6 +975,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
     if (Number.isNaN(appointmentDate.getTime())) {
       setBookingMessage("Please select a valid date and time.");
+      return;
+    }
+
+    if (appointmentDate <= new Date()) {
+      setBookingMessage("Please choose a future appointment time.");
       return;
     }
 

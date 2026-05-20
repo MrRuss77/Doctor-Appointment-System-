@@ -50,6 +50,8 @@ LIVE WEBSITE CONTEXT:
 {{WEBSITE_CONTEXT}}`;
 
 let groqInstance = null;
+const getChatModel = () => process.env.GROQ_MODEL || process.env.CHAT_MODEL || "openai/gpt-oss-120b";
+
 const getGroqClient = () => {
   if (!process.env.GROQ_API_KEY) {
     throw new Error("GROQ_API_KEY is not configured in .env");
@@ -653,7 +655,7 @@ router.post("/", async (req, res) => {
 
     const groq = getGroqClient();
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: getChatModel(),
       messages: [
         { role: "system", content: filledInstruction },
         ...cleanMessages

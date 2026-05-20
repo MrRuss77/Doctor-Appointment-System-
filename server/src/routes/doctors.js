@@ -12,6 +12,7 @@ import { doctorDefaultPassword } from "../data/catalog.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import {
+  filterFutureAvailabilitySlots,
   getNextAvailabilityText,
   hasOverlappingAvailabilitySlots,
   normalizeAvailabilitySlots,
@@ -190,7 +191,7 @@ const buildDoctorImagePath = (doctor) =>
 
 const serializeDoctor = (doctorDocument) => {
   const doctor = doctorDocument.toObject ? doctorDocument.toObject() : doctorDocument;
-  const availabilitySlots = normalizeAvailabilitySlots(doctor.availabilitySlots || []);
+  const availabilitySlots = filterFutureAvailabilitySlots(doctor.availabilitySlots || []);
 
   return {
     ...doctor,
@@ -308,7 +309,7 @@ router.get(
   "/:id/availability",
   asyncHandler(async (req, res) => {
     const doctor = await findDoctorOrThrow(req.params.id);
-    const availabilitySlots = normalizeAvailabilitySlots(doctor.availabilitySlots || []);
+    const availabilitySlots = filterFutureAvailabilitySlots(doctor.availabilitySlots || []);
 
     res.json({
       success: true,
@@ -454,9 +455,10 @@ router.delete(
       throw new HttpError(404, "Availability slot not found.");
     }
 
-    slot.deleteOne();
     doctor.availabilitySlots = normalizeAvailabilitySlots(
-      doctor.availabilitySlots.map((item) => item.toObject?.() || item)
+      doctor.availabilitySlots
+        .map((item) => item.toObject?.() || item)
+        .filter((item) => String(item._id) !== String(req.params.slotId))
     );
     doctor.availabilityText =
       doctor.availabilitySlots.length > 0

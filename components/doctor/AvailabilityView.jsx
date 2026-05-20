@@ -1,48 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   addDoctorAvailability,
   deleteDoctorAvailabilitySlot,
-  fetchDoctorAvailability,
-  updateDoctorAvailabilitySlot
+  fetchDoctorAvailability
 } from "../../src/api/client";
 import { AddAvailabilityModal } from "./DoctorModals";
 import ConfirmDialog from "../ConfirmDialog";
-
-const AvailabilityDropdown = ({ value, onChange, disabled }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  return (
-    <div 
-      className={`admin-status-dropdown ${isOpen ? "open" : ""} ${disabled ? "disabled" : ""}`} 
-      onClick={() => !disabled && setIsOpen(!isOpen)} 
-      style={{ minWidth: '120px', background: 'white' }}
-    >
-      <div className="custom-dropdown-trigger">
-        {value}
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-      </div>
-      {isOpen && (
-        <div className="custom-dropdown-menu">
-          {["Available", "Unavailable"].map((status) => (
-            <div 
-              key={status} 
-              className={`custom-dropdown-item ${status === value ? "selected" : ""}`} 
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!disabled) {
-                  onChange(status);
-                  setIsOpen(false);
-                }
-              }}
-            >
-              {status}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const weekdayOrder = [
   "Monday",
@@ -131,7 +94,7 @@ const AvailabilityView = ({ doctorProfile }) => {
   const [editingDayId, setEditingDayId] = useState(null);
   const [feedback, setFeedback] = useState("");
   const [busyId, setBusyId] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const doctorId = doctorProfile?._id || "";
 
@@ -148,11 +111,6 @@ const AvailabilityView = ({ doctorProfile }) => {
   useEffect(() => {
     loadAvailability().catch((error) => setFeedback(error.message));
   }, [doctorId]);
-
-  const flattenedSlots = useMemo(
-    () => schedule.flatMap((day) => day.slots.map((slot) => ({ ...slot, day: day.day }))),
-    [schedule]
-  );
 
   const addAvailabilitySlot = async ({ day, startTime, endTime }) => {
     if (!doctorId) {
@@ -180,47 +138,27 @@ const AvailabilityView = ({ doctorProfile }) => {
     }
   };
 
-  const handleStatusChange = async (slotId, nextStatus) => {
-    if (!doctorId) {
-      setFeedback("Doctor profile is not linked yet.");
-      return;
-    }
-
-    const normalizedSlotId = String(slotId);
-    const slot = flattenedSlots.find((item) => String(item.slotKey || item._id || item.id) === normalizedSlotId);
-
-    if (!slot) {
-      setFeedback("Availability slot not found.");
-      return;
-    }
-
-    setBusyId(normalizedSlotId);
-    setFeedback("");
-
-    try {
-      const response = await updateDoctorAvailabilitySlot(doctorId, normalizedSlotId, {
-        date: slot.date,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        isAvailable: nextStatus === "Available",
-        note: slot.note || ""
-      });
-
-      setFeedback(response.message || "Availability updated successfully.");
-      await loadAvailability();
-    } catch (error) {
-      setFeedback(error.message);
-    } finally {
-      setBusyId("");
-    }
-  };
-
   const closeDeleteDialog = () => {
     if (busyId) {
       return;
     }
 
-    setDeleteTarget("");
+    setDeleteTarget(null);
+  };
+
+  const openDeleteDialog = (slot) => {
+    const slotId = String(slot?.slotKey || slot?._id || slot?.id || "");
+
+    if (!slotId) {
+      setFeedback("This availability slot cannot be deleted because its ID is missing. Please refresh and try again.");
+      return;
+    }
+
+    setFeedback("");
+    setDeleteTarget({
+      id: slotId,
+      label: slot?.time || "the selected time"
+    });
   };
 
   const handleDeleteSlot = async () => {
@@ -229,17 +167,17 @@ const AvailabilityView = ({ doctorProfile }) => {
       return;
     }
 
-    if (!deleteTarget) {
+    if (!deleteTarget?.id) {
       return;
     }
 
-    setBusyId(deleteTarget);
+    setBusyId(deleteTarget.id);
     setFeedback("");
 
     try {
-      const response = await deleteDoctorAvailabilitySlot(doctorId, deleteTarget);
+      const response = await deleteDoctorAvailabilitySlot(doctorId, deleteTarget.id);
       setFeedback(response.message || "Availability removed successfully.");
-      setDeleteTarget("");
+      setDeleteTarget(null);
       await loadAvailability();
     } catch (error) {
       setFeedback(error.message);
@@ -277,28 +215,21 @@ const AvailabilityView = ({ doctorProfile }) => {
 
               <div className="availability-slots">
                 {day.slots.map((slot) => {
-                    const slotId = slot.slotKey || slot._id || slot.id;
-                    const isBusy = busyId === slotId;
+                    const slotId = String(slot.slotKey || slot._id || slot.id || "");
+                    const isBusy = Boolean(slotId) && busyId === slotId;
 
                   return (
-                    <div key={slotId} className="availability-slot">
+                    <div key={slotId || `${slot.date}-${slot.startTime}-${slot.endTime}`} className="availability-slot">
                       <span className="availability-time">{slot.time}</span>
                       {editingDayId === day.id ? (
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                          <AvailabilityDropdown
-                            value={slot.status}
-                            onChange={(nextStatus) => handleStatusChange(slotId, nextStatus)}
-                            disabled={isBusy}
-                          />
-                          <button
-                            type="button"
-                            className="doctor-card-action doctor-card-action--cancel"
-                            onClick={() => setDeleteTarget(slotId)}
-                            disabled={isBusy}
-                          >
-                            {isBusy ? "Working..." : "Delete"}
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          className="doctor-card-action doctor-card-action--cancel"
+                          onClick={() => openDeleteDialog(slot)}
+                          disabled={isBusy}
+                        >
+                          {isBusy ? "Working..." : "Delete"}
+                        </button>
                       ) : (
                         <span className={`availability-pill ${slot.status.toLowerCase()}`}>
                           {slot.status}
@@ -327,13 +258,13 @@ const AvailabilityView = ({ doctorProfile }) => {
         isOpen={Boolean(deleteTarget)}
         eyebrow="Availability slot"
         title="Delete this slot?"
-        message="This will remove the selected availability slot from the doctor's schedule."
+        message={`This will remove ${deleteTarget?.label || "the selected availability slot"} from the doctor's schedule.`}
         confirmLabel="Delete Slot"
         cancelLabel="Cancel"
         confirmTone="danger"
         onCancel={closeDeleteDialog}
         onConfirm={handleDeleteSlot}
-        busy={busyId === deleteTarget}
+        busy={busyId === deleteTarget?.id}
       />
     </div>
   );

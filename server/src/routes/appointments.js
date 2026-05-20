@@ -45,6 +45,10 @@ const ensureAppointmentRelations = async ({ patient, doctor, department }) => {
 };
 
 const ensureAppointmentFitsAvailability = (doctorRecord, appointmentDate) => {
+  if (appointmentDate <= new Date()) {
+    throw new HttpError(400, "Please choose a future appointment date and time.");
+  }
+
   const availabilitySlots = doctorRecord.availabilitySlots || [];
 
   if (availabilitySlots.length === 0) {
@@ -228,23 +232,27 @@ router.put(
       ? new Date(req.body.appointmentDate)
       : appointment.appointmentDate;
     const previousAppointmentTime = appointment.appointmentDate?.toISOString?.() || "";
+    const nextStatus = String(req.body.status || appointment.status || "").toLowerCase();
+    const isCancelling = nextStatus === "cancelled";
 
     if (Number.isNaN(nextAppointmentDate.getTime())) {
       throw new HttpError(400, "Please provide a valid appointment date and time.");
     }
 
-    const { doctorRecord } = await ensureAppointmentRelations({
-      patient: nextPatient,
-      doctor: nextDoctor,
-      department: nextDepartment
-    });
+    if (!isCancelling) {
+      const { doctorRecord } = await ensureAppointmentRelations({
+        patient: nextPatient,
+        doctor: nextDoctor,
+        department: nextDepartment
+      });
 
-    ensureAppointmentFitsAvailability(doctorRecord, nextAppointmentDate);
-    await ensureNoBookingConflict({
-      appointmentId: appointment._id,
-      doctorId: doctorRecord._id,
-      appointmentDate: nextAppointmentDate
-    });
+      ensureAppointmentFitsAvailability(doctorRecord, nextAppointmentDate);
+      await ensureNoBookingConflict({
+        appointmentId: appointment._id,
+        doctorId: doctorRecord._id,
+        appointmentDate: nextAppointmentDate
+      });
+    }
 
     Object.assign(appointment, {
       ...req.body,

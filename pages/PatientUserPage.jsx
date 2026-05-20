@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { fetchAppointments, updateAppointment } from "../src/api/client";
 import CustomStatusDropdown from "../components/admin/CustomStatusDropdown";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const formatAppointmentDate = (value) => {
   const date = new Date(value);
@@ -23,6 +24,7 @@ function PatientUserPage({ authUser }) {
   const [historyFilter, setHistoryFilter] = useState("all");
   const [historyFeedback, setHistoryFeedback] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   const fullName = `${authUser?.firstName || ""} ${authUser?.lastName || ""}`.trim();
   const patientEmail = String(authUser?.email || "").trim().toLowerCase();
@@ -121,7 +123,21 @@ function PatientUserPage({ authUser }) {
 
   const getStatusTone = (status) => String(status || "pending").toLowerCase();
 
-  const handleCancelAppointment = async (appointment) => {
+  const closeCancelDialog = () => {
+    if (busyId) {
+      return;
+    }
+
+    setCancelTarget(null);
+  };
+
+  const handleCancelAppointment = async () => {
+    const appointment = cancelTarget;
+
+    if (!appointment?._id) {
+      return;
+    }
+
     setBusyId(appointment._id);
     setHistoryFeedback("");
 
@@ -138,6 +154,7 @@ function PatientUserPage({ authUser }) {
       });
 
       setHistoryFeedback(response.message || "Appointment cancelled successfully.");
+      setCancelTarget(null);
       await refreshHistory();
     } catch (error) {
       setHistoryFeedback(error.message);
@@ -261,7 +278,10 @@ function PatientUserPage({ authUser }) {
                       <button
                         type="button"
                         className="admin-btn-pill red"
-                        onClick={() => handleCancelAppointment(appointment)}
+                        onClick={() => {
+                          setHistoryFeedback("");
+                          setCancelTarget(appointment);
+                        }}
                         disabled={busyId === appointment._id}
                       >
                         {busyId === appointment._id ? "Cancelling..." : "Cancel"}
@@ -279,6 +299,21 @@ function PatientUserPage({ authUser }) {
           </div>
         )}
       </article>
+
+      <ConfirmDialog
+        isOpen={Boolean(cancelTarget)}
+        eyebrow="Appointment cancellation"
+        title="Cancel this appointment?"
+        message={`This will cancel your appointment with ${cancelTarget?.doctor?.fullName || "the selected doctor"} on ${
+          cancelTarget ? formatAppointmentDate(cancelTarget.appointmentDate) : "the selected date"
+        }. The doctor panel will show this appointment as cancelled.`}
+        confirmLabel="Cancel Appointment"
+        cancelLabel="Keep Appointment"
+        confirmTone="danger"
+        onCancel={closeCancelDialog}
+        onConfirm={handleCancelAppointment}
+        busy={busyId === cancelTarget?._id}
+      />
     </section>
   );
 }

@@ -69,8 +69,17 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
       }
     });
 
+    const refreshTimer = window.setInterval(() => {
+      loadAppointments().catch((error) => {
+        if (active) {
+          setFeedback(error.message);
+        }
+      });
+    }, 30000);
+
     return () => {
       active = false;
+      window.clearInterval(refreshTimer);
     };
   }, [doctorProfile?._id]);
 
@@ -283,9 +292,6 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
                       <h4>
                         {appointment.patient?.firstName} {appointment.patient?.lastName}
                       </h4>
-                      <span className={`doctor-status doctor-status--${String(appointment.status || "pending").toLowerCase()}`}>
-                        {String(appointment.status || "pending")}
-                      </span>
                     </div>
                     <p>{appointment.reason || "General consultation"}</p>
                     <span>
@@ -300,6 +306,10 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
                 </div>
 
                 <div className="doctor-appointment-card__actions">
+                  <span className={`doctor-status doctor-status--${String(appointment.status || "pending").toLowerCase()}`}>
+                    {String(appointment.status || "pending")}
+                  </span>
+
                   <button
                     type="button"
                     className="doctor-card-action doctor-card-action--reschedule"
