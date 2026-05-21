@@ -8,7 +8,8 @@ const AuthIcon = () => (
 );
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phonePattern = /^\+?[0-9][0-9\s-]{6,19}$/;
+const phonePattern = /^\d{10}$/;
+const sanitizePhone = (value = "") => value.replace(/\D/g, "").slice(0, 10);
 
 const RegisterCard = ({ onRegister, onBackToLogin }) => {
   const [form, setForm] = useState({
@@ -58,7 +59,7 @@ const RegisterCard = ({ onRegister, onBackToLogin }) => {
     }
 
     if (!phonePattern.test(form.phone.trim())) {
-      setMessage("Please enter a valid phone number.");
+      setMessage("Phone number must be exactly 10 digits.");
       return;
     }
 
@@ -76,7 +77,7 @@ const RegisterCard = ({ onRegister, onBackToLogin }) => {
       firstName,
       lastName,
       email: form.email.trim().toLowerCase(),
-      phone: form.phone.trim(),
+      phone: sanitizePhone(form.phone),
       password: form.password
     });
   };
@@ -113,8 +114,11 @@ const RegisterCard = ({ onRegister, onBackToLogin }) => {
             Phone Number
             <input 
               type="text" 
+              inputMode="numeric"
+              pattern="\d{10}"
+              maxLength={10}
               value={form.phone} 
-              onChange={(e) => updateField("phone", e.target.value)} 
+              onChange={(e) => updateField("phone", sanitizePhone(e.target.value))}
             />
           </label>
 

@@ -18,8 +18,8 @@ const quickActions = [
   },
   {
     label: "View appointment",
-    page: "admin",
-    detail: "Track requests and approvals from the admin panel."
+    page: "appointments",
+    detail: "Track your appointment requests and status updates."
   }
 ];
 
@@ -68,15 +68,21 @@ function Home({ onNavigate, authUser, welcomeName }) {
   const handleActionClick = (action) => {
     setActiveAction(action.label);
 
-    if (action.page === "admin") {
+    if (action.page === "appointments") {
+      if (authUser?.role === "patient") {
+        onNavigate?.("patient-profile");
+        return;
+      }
       if (authUser?.role === "doctor") {
         onNavigate?.("doctor");
         return;
       }
-      if (authUser?.role !== "admin") {
-        onNavigate?.("login");
+      if (authUser?.role === "admin") {
+        onNavigate?.("admin");
         return;
       }
+      onNavigate?.("login");
+      return;
     }
 
     onNavigate?.(action.page);

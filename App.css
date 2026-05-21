@@ -102,6 +102,7 @@ video {
   display: inline-flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
   border: none;
   background: transparent;
   color: var(--ink);
@@ -130,11 +131,13 @@ video {
 .brand-copy {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .brand-copy strong {
   font-size: 1.15rem;
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .brand-copy small {
@@ -142,6 +145,7 @@ video {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
 }
 
 .nav-links {
@@ -2048,10 +2052,29 @@ video {
   .navbar {
     align-items: center;
     flex-wrap: wrap;
+    gap: 12px;
+    overflow: visible;
   }
 
   .menu-toggle {
     display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .navbar__brand-area {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .brand-icon-shell {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    flex: 0 0 auto;
   }
 
   .nav-links {
@@ -2079,6 +2102,12 @@ video {
   .nav-utility {
     width: 100%;
     margin-left: 0;
+    min-width: 0;
+  }
+
+  .nav-profile-wrap {
+    display: grid;
+    gap: 8px;
   }
 
   .nav-panel-actions {
@@ -2171,8 +2200,17 @@ video {
   .navbar {
     width: calc(100% - 16px);
     margin-top: 10px;
-    padding: 14px 16px;
+    padding: 12px;
     border-radius: 24px;
+  }
+
+  .brand {
+    gap: 10px;
+  }
+
+  .brand-icon-shell {
+    width: 42px;
+    height: 42px;
   }
 
   .brand-copy strong {
@@ -2282,12 +2320,20 @@ video {
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  max-width: 100%;
   border: none;
   border-radius: 999px;
   padding: 8px 14px 8px 10px;
   background: rgba(16, 35, 61, 0.07);
   color: var(--ink);
   font-weight: 800;
+}
+
+.profile-menu-button > span:not(.profile-menu-button__avatar):not(.profile-menu-button__chevron) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-menu-button__avatar {

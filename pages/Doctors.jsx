@@ -296,6 +296,9 @@ const emptyBookingForm = {
   message: ""
 };
 
+const phonePattern = /^\d{10}$/;
+const sanitizePhone = (value = "") => String(value).replace(/\D/g, "").slice(0, 10);
+
 const normalizeDepartment = (department) => {
   const departmentMap = {
     anesthiology: "anesthesiology",
@@ -403,7 +406,7 @@ const buildProfilePrefill = (user) => {
 
   return {
     fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-    phone: user.phone || "",
+    phone: sanitizePhone(user.phone || ""),
     email: user.email || ""
   };
 };
@@ -431,6 +434,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
   const [bookingDialog, setBookingDialog] = useState({ isOpen: false, type: "success", message: "" });
+  const [registrationDialog, setRegistrationDialog] = useState(false);
 
   const currentPage = pageContent[activePage] || pageContent.doctors;
   const showDoctors = activePage === "doctors";
@@ -818,7 +822,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     setAuthBusy(true);
 
     try {
-      const response = await createUser({
+      await createUser({
         firstName: payload.firstName,
         lastName: payload.lastName,
         email: payload.email,
@@ -827,7 +831,8 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         role: "patient"
       });
 
-      setAuthMessage(response.message || "Registration successful. Please login.");
+      setAuthMessage("");
+      setRegistrationDialog(true);
       setLoginView("login");
     } catch (error) {
       setAuthMessage(error.message);
@@ -882,9 +887,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
   };
 
   const updateBookingField = (field, value) => {
+    const nextValue = field === "phone" ? sanitizePhone(value) : value;
+
     setBookingForm((current) => ({
       ...current,
-      [field]: value
+      [field]: nextValue
     }));
     setBookingMessage("");
   };
@@ -897,7 +904,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
       authUserId &&
       bookingForm.fullName.trim().toLowerCase() === authFullName.toLowerCase() &&
       bookingForm.email.trim().toLowerCase() === String(authUser.email || "").trim().toLowerCase() &&
-      bookingForm.phone.trim() === String(authUser.phone || "").trim();
+      bookingForm.phone.trim() === sanitizePhone(authUser.phone || "");
 
     if (isLoggedInPatient) {
       return { ...authUser, _id: authUserId };
@@ -912,7 +919,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         return user.email?.toLowerCase() === normalizedEmail;
       }
 
-      return user.phone?.trim() === normalizedPhone;
+      return sanitizePhone(user.phone || "") === normalizedPhone;
     });
 
     if (existingUser) {
@@ -951,6 +958,11 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
 
     if (requiredFields.some((field) => !field.trim())) {
       setBookingMessage("Please fill all required fields before submitting.");
+      return;
+    }
+
+    if (!phonePattern.test(bookingForm.phone.trim())) {
+      setBookingMessage("Phone number must be exactly 10 digits.");
       return;
     }
 
@@ -1180,6 +1192,9 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
                   <span>Phone Number*</span>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="\d{10}"
+                    maxLength={10}
                     value={bookingForm.phone}
                     onChange={(event) => updateBookingField("phone", event.target.value)}
                   />
@@ -1422,6 +1437,18 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         confirmTone={bookingDialog.type === "success" ? "neutral" : "danger"}
         onCancel={() => setBookingDialog((current) => ({ ...current, isOpen: false }))}
         onConfirm={() => setBookingDialog((current) => ({ ...current, isOpen: false }))}
+      />
+
+      <ConfirmDialog
+        isOpen={registrationDialog}
+        eyebrow="Registration complete"
+        title="Registration successful"
+        message="Your MediCare account has been created. You can now log in with your email and password."
+        confirmLabel="Go to Login"
+        cancelLabel=""
+        confirmTone="neutral"
+        onCancel={() => setRegistrationDialog(false)}
+        onConfirm={() => setRegistrationDialog(false)}
       />
     </section>
   );
