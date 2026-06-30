@@ -84,7 +84,9 @@ function Footer({ onNavigate }) {
               </p>
 
               <p className="mdc-footer__contact-line">P.O. Box 11234</p>
-              <p className="mdc-footer__contact-line">Naxal, Kathmandu, Nepal</p>
+              <p className="mdc-footer__contact-line">
+                Naxal, Kathmandu, Nepal
+              </p>
 
               <a
                 href="mailto:info@medicarehospital.com"
@@ -213,6 +215,47 @@ function Footer({ onNavigate }) {
             </ul>
           </div>
 
+          <div>
+            <h3 className="mdc-footer__col-heading">Find Us</h3>
+            <p className="mdc-footer__link-btn" style={{}}>
+              Bir Hospital, Mahabouddha, Kathmandu
+            </p>
+            <a
+              href="https://maps.google.com/?q=Bir+Hospital+Kathmandu+Nepal"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "block",
+                borderRadius: "10px",
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+              aria-label="Open Bir Hospital in Google Maps"
+            >
+              <iframe
+                title="Bir Hospital, Kathmandu"
+                src="https://maps.google.com/maps?q=Bir+Hospital+Kathmandu+Nepal&output=embed"
+                width="100%"
+                height="180"
+                style={{ border: 0, display: "block", pointerEvents: "none" }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </a>
+            <a
+              href="https://maps.google.com/?q=Bir+Hospital+Kathmandu+Nepal"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-block",
+                marginTop: "8px",
+                fontSize: "12px",
+                color: "#60a5fa",
+              }}
+            >
+              Open in Google Maps ↗
+            </a>
+          </div>
         </div>
       </div>
 
