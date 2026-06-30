@@ -292,6 +292,52 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
                       <h4>
                         {appointment.patient?.firstName} {appointment.patient?.lastName}
                       </h4>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                        <span style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          padding: "2px 8px",
+                          borderRadius: "20px",
+                          background: appointment.appointmentType === "online" ? "#dbeafe" : "#dcfce7",
+                          color: appointment.appointmentType === "online" ? "#1d4ed8" : "#166534"
+                        }}>
+                          {appointment.appointmentType === "online" ? "Online" : "In-Person"}
+                        </span>
+                        {appointment.paymentStatus === "paid" ? (
+                          <span style={{
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            padding: "2px 8px",
+                            borderRadius: "20px",
+                            background: "#dcfce7",
+                            color: "#166534"
+                          }}>
+                            eSewa Paid · Rs. {Number(appointment.amountPaid || 0).toLocaleString()}
+                          </span>
+                        ) : appointment.paymentStatus === "refunded" ? (
+                          <span style={{
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            padding: "2px 8px",
+                            borderRadius: "20px",
+                            background: "#ffedd5",
+                            color: "#9a3412"
+                          }}>
+                            Refund Pending
+                          </span>
+                        ) : (
+                          <span style={{
+                            fontSize: "11px",
+                            fontWeight: "700",
+                            padding: "2px 8px",
+                            borderRadius: "20px",
+                            background: "#f3f4f6",
+                            color: "#6b7280"
+                          }}>
+                            Free
+                          </span>
+                        )}
+                      </span>
                     </div>
                     <p>{appointment.reason || "General consultation"}</p>
                     <span>
@@ -302,6 +348,26 @@ const DoctorAppointmentsView = ({ authUser, doctorProfile }) => {
                       })}{" "}
                       at {formatTime(appointment.appointmentDate)}
                     </span>
+                    {appointment.appointmentType === "online" && appointment.meetLink && String(appointment.status || "").toLowerCase() === "confirmed" ? (
+                      <a
+                        href={appointment.meetLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: "inline-block",
+                          background: "#1a73e8",
+                          color: "#fff",
+                          textDecoration: "none",
+                          fontWeight: "700",
+                          fontSize: "13px",
+                          padding: "5px 12px",
+                          borderRadius: "8px",
+                          marginTop: "6px"
+                        }}
+                      >
+                        Join Google Meet
+                      </a>
+                    ) : null}
                   </div>
                 </div>
 

@@ -243,3 +243,9 @@ export const sendChatMessage = async (body) =>
     method: "POST",
     body: JSON.stringify(body)
   });
+
+export const initiatePayment = async (body) =>
+  request("/payments/initiate", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });

@@ -91,6 +91,33 @@ const appointmentSchema = new mongoose.Schema(
     feedbackEntries: {
       type: [appointmentFeedbackSchema],
       default: []
+    },
+    appointmentType: {
+      type: String,
+      enum: ["physical", "online"],
+      default: "physical"
+    },
+    meetLink: {
+      type: String,
+      trim: true
+    },
+    calendarEventId: {
+      type: String,
+      trim: true
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["not_required", "pending", "paid", "refunded"],
+      default: "not_required"
+    },
+    paymentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment",
+      default: null
+    },
+    amountPaid: {
+      type: Number,
+      default: 0
     }
   },
   {

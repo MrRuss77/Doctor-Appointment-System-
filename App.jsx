@@ -5,6 +5,8 @@ import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import PatientUserPage from "./pages/PatientUserPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailure from "./pages/PaymentFailure";
 import Footer from "./components/Footer";
 import MediCareChat from "./src/components/MediCareChat";
 import FloatingBackButton from "./components/FloatingBackButton";
@@ -31,6 +33,19 @@ function App() {
     }
   });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [paymentAppointmentId, setPaymentAppointmentId] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("payment-success")) {
+      setPaymentAppointmentId(params.get("appointmentId") || null);
+      setActivePage("payment-success");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.has("payment-failure")) {
+      setActivePage("payment-failure");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (authUser) {
@@ -133,7 +148,11 @@ function App() {
             : {}
         }
       >
-        {activePage === "admin" && authUser?.role === "admin" ? (
+        {activePage === "payment-success" ? (
+          <PaymentSuccess appointmentId={paymentAppointmentId} onNavigate={handleNavigate} />
+        ) : activePage === "payment-failure" ? (
+          <PaymentFailure onNavigate={handleNavigate} />
+        ) : activePage === "admin" && authUser?.role === "admin" ? (
           <AdminDashboard authUser={authUser} onLogout={requestLogout} onBack={handleBack} />
         ) : activePage === "doctor" &&
           (authUser?.role === "doctor" || authUser?.role === "admin") ? (

@@ -13,6 +13,7 @@ import {
   fetchDoctorAvailability,
   fetchDoctors,
   fetchUsers,
+  initiatePayment,
   loginUser,
   requestPasswordReset,
   sendOtp,
@@ -293,7 +294,8 @@ const emptyBookingForm = {
   age: "",
   date: "",
   time: "",
-  message: ""
+  message: "",
+  appointmentType: "physical"
 };
 
 const phonePattern = /^\d{10}$/;
@@ -940,13 +942,7 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     });
   };
 
-  const handleAppointmentSubmit = async (event) => {
-    event.preventDefault();
-
-    if (bookingBusy) {
-      return;
-    }
-
+  const validateBookingForm = () => {
     const requiredFields = [
       bookingForm.fullName,
       bookingForm.phone,
@@ -957,81 +953,97 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
     ];
 
     if (requiredFields.some((field) => !field.trim())) {
-      setBookingMessage("Please fill all required fields before submitting.");
-      return;
+      return "Please fill all required fields before submitting.";
     }
 
     if (!phonePattern.test(bookingForm.phone.trim())) {
-      setBookingMessage("Phone number must be exactly 10 digits.");
-      return;
+      return "Phone number must be exactly 10 digits.";
     }
 
     if (!selectedDoctor?.backendId || !selectedDoctor.departmentId) {
-      setBookingMessage("This doctor is not synced with backend yet. Please choose a doctor from API data.");
-      return;
+      return "This doctor is not synced with backend yet. Please choose a doctor from API data.";
     }
 
     if (!bookingForm.date || !bookingForm.time) {
-      setBookingMessage("Please choose an available date and time slot.");
-      return;
+      return "Please choose an available date and time slot.";
     }
 
     const selectedSlot = slotsForSelectedDate.find((slot) => slot.time === bookingForm.time);
 
     if (!selectedSlot || !selectedSlot.isAvailable || selectedSlot.isBooked) {
-      setBookingMessage("Please choose an available, unbooked time slot.");
-      return;
+      return "Please choose an available, unbooked time slot.";
     }
 
     const appointmentDate = new Date(`${bookingForm.date}T${bookingForm.time}:00`);
 
     if (Number.isNaN(appointmentDate.getTime())) {
-      setBookingMessage("Please select a valid date and time.");
-      return;
+      return "Please select a valid date and time.";
     }
 
     if (appointmentDate <= new Date()) {
-      setBookingMessage("Please choose a future appointment time.");
+      return "Please choose a future appointment time.";
+    }
+
+    return null;
+  };
+
+  const bookAppointmentFree = async (appointmentDate) => {
+    const patient = await ensurePatient();
+
+    const response = await createAppointment({
+      patient: patient._id,
+      doctor: selectedDoctor.backendId,
+      department: selectedDoctor.departmentId,
+      appointmentDate: appointmentDate.toISOString(),
+      status: "pending",
+      appointmentType: bookingForm.appointmentType || "physical",
+      reason: bookingForm.message.trim() || "General consultation",
+      notes: [
+        `Requested by: ${bookingForm.fullName.trim()}`,
+        `Phone: ${bookingForm.phone.trim()}`,
+        `Email: ${bookingForm.email.trim() || "not provided"}`,
+        `Address: ${bookingForm.address.trim()}`,
+        `Gender: ${bookingForm.gender}`,
+        `Blood Group: ${bookingForm.bloodGroup || "not provided"}`,
+        `Age: ${bookingForm.age.trim() || "not provided"}`
+      ].join(" | ")
+    });
+
+    const refreshedAppointments = await fetchAppointments({ doctor: selectedDoctor.backendId });
+    setDoctorAppointments(Array.isArray(refreshedAppointments) ? refreshedAppointments : []);
+    setBookingMessage(response.message || "Appointment booked successfully.");
+    setBookingDialog({
+      isOpen: true,
+      type: "success",
+      message: "Appointment Booked Successfully!"
+    });
+    setBookingForm({
+      ...emptyBookingForm,
+      ...buildProfilePrefill(authUser),
+      date: bookingForm.date,
+      time: ""
+    });
+  };
+
+  const handleAppointmentSubmit = async (event) => {
+    event.preventDefault();
+
+    if (bookingBusy) {
       return;
     }
 
+    const validationError = validateBookingForm();
+
+    if (validationError) {
+      setBookingMessage(validationError);
+      return;
+    }
+
+    const appointmentDate = new Date(`${bookingForm.date}T${bookingForm.time}:00`);
     setBookingBusy(true);
 
     try {
-      const patient = await ensurePatient();
-
-      const response = await createAppointment({
-        patient: patient._id,
-        doctor: selectedDoctor.backendId,
-        department: selectedDoctor.departmentId,
-        appointmentDate: appointmentDate.toISOString(),
-        status: "pending",
-        reason: bookingForm.message.trim() || "General consultation",
-        notes: [
-          `Requested by: ${bookingForm.fullName.trim()}`,
-          `Phone: ${bookingForm.phone.trim()}`,
-          `Email: ${bookingForm.email.trim() || "not provided"}`,
-          `Address: ${bookingForm.address.trim()}`,
-          `Gender: ${bookingForm.gender}`,
-          `Blood Group: ${bookingForm.bloodGroup || "not provided"}`,
-          `Age: ${bookingForm.age.trim() || "not provided"}`
-        ].join(" | ")
-      });
-
-      const refreshedAppointments = await fetchAppointments({ doctor: selectedDoctor.backendId });
-      setDoctorAppointments(Array.isArray(refreshedAppointments) ? refreshedAppointments : []);
-      setBookingMessage(response.message || "Appointment booked successfully.");
-      setBookingDialog({
-        isOpen: true,
-        type: "success",
-        message: "Appointment Booked Successfully!"
-      });
-      setBookingForm({
-        ...emptyBookingForm,
-        ...buildProfilePrefill(authUser),
-        date: bookingForm.date,
-        time: ""
-      });
+      await bookAppointmentFree(appointmentDate);
     } catch (error) {
       setBookingMessage(error.message);
       setBookingDialog({
@@ -1040,6 +1052,81 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
         message: "Booking Failed. Please try again."
       });
     } finally {
+      setBookingBusy(false);
+    }
+  };
+
+  const handlePayNow = async () => {
+    if (bookingBusy) {
+      return;
+    }
+
+    const validationError = validateBookingForm();
+
+    if (validationError) {
+      setBookingMessage(validationError);
+      return;
+    }
+
+    const appointmentDate = new Date(`${bookingForm.date}T${bookingForm.time}:00`);
+    setBookingBusy(true);
+
+    try {
+      const patient = await ensurePatient();
+
+      const paymentData = await initiatePayment({
+        patientId: patient._id,
+        doctorId: selectedDoctor.backendId,
+        departmentId: selectedDoctor.departmentId,
+        appointmentDate: appointmentDate.toISOString(),
+        bookingForm: {
+          fullName: bookingForm.fullName.trim(),
+          phone: bookingForm.phone.trim(),
+          email: bookingForm.email.trim() || "",
+          address: bookingForm.address.trim(),
+          gender: bookingForm.gender,
+          bloodGroup: bookingForm.bloodGroup || "",
+          age: bookingForm.age.trim() || "",
+          message: bookingForm.message.trim(),
+          appointmentType: bookingForm.appointmentType || "physical"
+        }
+      });
+
+      const esewaForm = document.createElement("form");
+      esewaForm.method = "POST";
+      esewaForm.action = paymentData.payment_url;
+
+      const fields = {
+        amount: paymentData.amount,
+        tax_amount: paymentData.tax_amount,
+        total_amount: paymentData.total_amount,
+        transaction_uuid: paymentData.transaction_uuid,
+        product_code: paymentData.product_code,
+        product_service_charge: paymentData.product_service_charge,
+        product_delivery_charge: paymentData.product_delivery_charge,
+        success_url: paymentData.success_url,
+        failure_url: paymentData.failure_url,
+        signed_field_names: paymentData.signed_field_names,
+        signature: paymentData.signature
+      };
+
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        esewaForm.appendChild(input);
+      });
+
+      document.body.appendChild(esewaForm);
+      esewaForm.submit();
+    } catch (error) {
+      setBookingMessage(error.message);
+      setBookingDialog({
+        isOpen: true,
+        type: "error",
+        message: "Payment initiation failed. Please try again."
+      });
       setBookingBusy(false);
     }
   };
@@ -1261,6 +1348,38 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
                   />
                 </label>
 
+                <div className="appointment-field appointment-field--full">
+                  <span>Appointment Type*</span>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                    {["physical", "online"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => updateBookingField("appointmentType", type)}
+                        style={{
+                          flex: 1,
+                          padding: "10px 0",
+                          borderRadius: "8px",
+                          border: bookingForm.appointmentType === type ? "2px solid #3468c8" : "2px solid #e2e8f0",
+                          background: bookingForm.appointmentType === type ? "#eef5ff" : "#f8faff",
+                          color: bookingForm.appointmentType === type ? "#3468c8" : "#617694",
+                          fontWeight: bookingForm.appointmentType === type ? "700" : "500",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          textTransform: "capitalize"
+                        }}
+                      >
+                        {type === "physical" ? "In-Person Visit" : "Online Consultation"}
+                      </button>
+                    ))}
+                  </div>
+                  {bookingForm.appointmentType === "online" && (
+                    <p style={{ margin: "8px 0 0", fontSize: "13px", color: "#3468c8" }}>
+                      A Google Meet link will be emailed to you once the appointment is confirmed.
+                    </p>
+                  )}
+                </div>
+
                 <div className="appointment-slot-picker appointment-field--full">
                   <div className="appointment-slot-picker__header">
                     <span>Available Slots*</span>
@@ -1329,9 +1448,64 @@ const Doctors = ({ activePage, onNavigate, doctorFilter, authUser, onLoginSucces
                 </label>
 
                 <div className="appointment-actions">
-                  <button type="submit" disabled={bookingBusy}>
-                    {bookingBusy ? "Submitting..." : "Submit"}
-                  </button>
+                  {Number(selectedDoctor?.consultationFee || 0) > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+                      <button
+                        type="button"
+                        disabled={bookingBusy}
+                        onClick={handlePayNow}
+                        style={{
+                          background: bookingBusy ? "#9ca3af" : "#60b246",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "13px 0",
+                          fontWeight: "700",
+                          fontSize: "15px",
+                          cursor: bookingBusy ? "not-allowed" : "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "8px"
+                        }}
+                      >
+                        {bookingBusy ? "Processing..." : (
+                          <>
+                            <img
+                              src="https://esewa.com.np/common/images/esewa_logo.png"
+                              alt="eSewa"
+                              style={{ height: "18px", borderRadius: "3px" }}
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            />
+                            Pay Now via eSewa · Rs. {Number(selectedDoctor.consultationFee).toLocaleString()}
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={bookingBusy}
+                        style={{
+                          background: "transparent",
+                          color: "#3468c8",
+                          border: "2px solid #3468c8",
+                          borderRadius: "8px",
+                          padding: "11px 0",
+                          fontWeight: "600",
+                          fontSize: "14px",
+                          cursor: bookingBusy ? "not-allowed" : "pointer"
+                        }}
+                      >
+                        {bookingBusy ? "Processing..." : "Book Now, Pay Later"}
+                      </button>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#6b7280", textAlign: "center" }}>
+                        Pay Later: appointment will be pending until confirmed by the doctor.
+                      </p>
+                    </div>
+                  ) : (
+                    <button type="submit" disabled={bookingBusy}>
+                      {bookingBusy ? "Processing..." : "Book Appointment"}
+                    </button>
+                  )}
                 </div>
               </form>
 

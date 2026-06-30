@@ -232,8 +232,37 @@ const AppointmentsView = () => {
                   <div className="manage-secondary">{appointment.department?.name || "No department"}</div>
                 </div>
                 <div className="col-specialty">
-                  <div className="manage-primary">{formatDate(appointment.appointmentDate)}</div>
-                  <div className="manage-secondary">{formatTime(appointment.appointmentDate)}</div>
+                  <div className="manage-primary" style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                    {formatDate(appointment.appointmentDate)}
+                    <span style={{
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      padding: "1px 7px",
+                      borderRadius: "20px",
+                      background: appointment.appointmentType === "online" ? "#dbeafe" : "#dcfce7",
+                      color: appointment.appointmentType === "online" ? "#1d4ed8" : "#166534"
+                    }}>
+                      {appointment.appointmentType === "online" ? "Online" : "In-Person"}
+                    </span>
+                  </div>
+                  <div className="manage-secondary" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {formatTime(appointment.appointmentDate)}
+                    {appointment.appointmentType === "online" && appointment.meetLink ? (
+                      <a
+                        href={appointment.meetLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          color: "#1a73e8",
+                          textDecoration: "none"
+                        }}
+                      >
+                        Meet ↗
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="col-status">
                   <CustomStatusDropdown
@@ -242,6 +271,45 @@ const AppointmentsView = () => {
                     onChange={(nextStatus) => handleStatusChange(appointment._id, nextStatus)}
                     disabled={busyId === appointment._id}
                   />
+                  <div style={{ marginTop: "6px" }}>
+                    {appointment.paymentStatus === "paid" ? (
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        padding: "2px 8px",
+                        borderRadius: "20px",
+                        background: "#dcfce7",
+                        color: "#166534",
+                        display: "inline-block"
+                      }}>
+                        eSewa Paid · Rs. {Number(appointment.amountPaid || 0).toLocaleString()}
+                      </span>
+                    ) : appointment.paymentStatus === "refunded" ? (
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        padding: "2px 8px",
+                        borderRadius: "20px",
+                        background: "#ffedd5",
+                        color: "#9a3412",
+                        display: "inline-block"
+                      }}>
+                        Refund Pending
+                      </span>
+                    ) : (
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        padding: "2px 8px",
+                        borderRadius: "20px",
+                        background: "#f3f4f6",
+                        color: "#6b7280",
+                        display: "inline-block"
+                      }}>
+                        Free
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="col-actions col-actions--responsive">
                   <button

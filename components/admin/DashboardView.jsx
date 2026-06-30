@@ -182,6 +182,52 @@ const DashboardView = ({ onOpenManageDoctors }) => {
                     {activity.patient?.firstName} {activity.patient?.lastName} with {activity.doctor?.fullName}
                   </strong>
                   <span>{formatDateTime(activity.appointmentDate)}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                    <span style={{
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      padding: "1px 8px",
+                      borderRadius: "20px",
+                      background: activity.appointmentType === "online" ? "#dbeafe" : "#dcfce7",
+                      color: activity.appointmentType === "online" ? "#1d4ed8" : "#166534"
+                    }}>
+                      {activity.appointmentType === "online" ? "Online" : "In-Person"}
+                    </span>
+                    {activity.paymentStatus === "paid" ? (
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        padding: "1px 8px",
+                        borderRadius: "20px",
+                        background: "#dcfce7",
+                        color: "#166534"
+                      }}>
+                        eSewa Paid
+                      </span>
+                    ) : activity.paymentStatus === "refunded" ? (
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        padding: "1px 8px",
+                        borderRadius: "20px",
+                        background: "#ffedd5",
+                        color: "#9a3412"
+                      }}>
+                        Refund Pending
+                      </span>
+                    ) : (
+                      <span style={{
+                        fontSize: "10px",
+                        fontWeight: "700",
+                        padding: "1px 8px",
+                        borderRadius: "20px",
+                        background: "#f3f4f6",
+                        color: "#6b7280"
+                      }}>
+                        Free
+                      </span>
+                    )}
+                  </span>
                 </div>
                 <CustomStatusDropdown
                   compact

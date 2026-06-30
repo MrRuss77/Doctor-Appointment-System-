@@ -244,8 +244,40 @@ function PatientUserPage({ authUser }) {
                   <div key={appointment._id} className="patient-history-row">
                     <div>
                       <strong>{appointment.doctor?.fullName || "Doctor not assigned"}</strong>
-                      <span>{formatAppointmentDate(appointment.appointmentDate)}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        {formatAppointmentDate(appointment.appointmentDate)}
+                        <span style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          padding: "2px 8px",
+                          borderRadius: "20px",
+                          background: appointment.appointmentType === "online" ? "#dbeafe" : "#dcfce7",
+                          color: appointment.appointmentType === "online" ? "#1d4ed8" : "#166534"
+                        }}>
+                          {appointment.appointmentType === "online" ? "Online" : "In-Person"}
+                        </span>
+                      </span>
                       <span>{`Visit #${filteredHistory.length - index}`}</span>
+                      {appointment.appointmentType === "online" && appointment.meetLink && String(appointment.status || "").toLowerCase() === "confirmed" ? (
+                        <a
+                          href={appointment.meetLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: "inline-block",
+                            background: "#1a73e8",
+                            color: "#fff",
+                            textDecoration: "none",
+                            fontWeight: "700",
+                            fontSize: "13px",
+                            padding: "6px 14px",
+                            borderRadius: "8px",
+                            marginTop: "4px"
+                          }}
+                        >
+                          Join Google Meet
+                        </a>
+                      ) : null}
                       {Array.isArray(appointment.feedbackEntries) && appointment.feedbackEntries.length > 0 ? (
                         <span>
                           Latest Feedback:{" "}
@@ -255,6 +287,38 @@ function PatientUserPage({ authUser }) {
                         <span>No doctor feedback added yet.</span>
                       )}
                     </div>
+
+                    {appointment.paymentStatus === "paid" ? (
+                      <div style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        background: "#dcfce7",
+                        color: "#166534",
+                        fontWeight: "700",
+                        fontSize: "12px",
+                        padding: "3px 10px",
+                        borderRadius: "20px",
+                        marginBottom: "6px"
+                      }}>
+                        Paid Rs. {Number(appointment.amountPaid || 0).toLocaleString()}
+                      </div>
+                    ) : appointment.paymentStatus === "refunded" ? (
+                      <div style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        background: "#ffedd5",
+                        color: "#9a3412",
+                        fontWeight: "700",
+                        fontSize: "12px",
+                        padding: "3px 10px",
+                        borderRadius: "20px",
+                        marginBottom: "6px"
+                      }}>
+                        Refund Pending
+                      </div>
+                    ) : null}
 
                     <div
                       className={`patient-history-status patient-history-status--${getStatusTone(

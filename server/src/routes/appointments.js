@@ -11,7 +11,9 @@ import {
   isAppointmentWithinAvailability
 } from "../utils/availability.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { createMeetEvent, deleteMeetEvent } from "../utils/googleCalendar.js";
 import HttpError from "../utils/httpError.js";
+import { sendAppointmentConfirmationEmail } from "../utils/mailer.js";
 
 const router = express.Router();
 
@@ -194,6 +196,65 @@ router.put(
     appointment.respondedByRole = req.body.respondedByRole || "admin";
     appointment.respondedAt = new Date();
 
+    if (req.body.status === "confirmed" && appointment.appointmentType === "online") {
+      try {
+        const populatedForMeet = await populateAppointment(Appointment.findById(appointment._id));
+        const patientEmail = populatedForMeet?.patient?.email || "";
+        const doctorEmail = populatedForMeet?.doctor?.email || "";
+        const doctorName = populatedForMeet?.doctor?.fullName || "Doctor";
+        const patientName = [
+          populatedForMeet?.patient?.firstName,
+          populatedForMeet?.patient?.lastName
+        ].filter(Boolean).join(" ") || "Patient";
+
+        const startISO = new Date(appointment.appointmentDate).toISOString();
+        const endISO = new Date(new Date(appointment.appointmentDate).getTime() + 30 * 60 * 1000).toISOString();
+
+        const { eventId, meetLink } = await createMeetEvent({
+          title: `MediCare: ${patientName} with ${doctorName}`,
+          description: appointment.reason || "Medical consultation",
+          startISO,
+          endISO,
+          attendeeEmails: [patientEmail, doctorEmail]
+        });
+
+        appointment.meetLink = meetLink;
+        appointment.calendarEventId = eventId;
+
+        if (meetLink) {
+          const dateLabel = new Date(appointment.appointmentDate).toLocaleString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+          });
+
+          const emailPayload = {
+            doctorName,
+            patientName,
+            dateLabel,
+            appointmentType: "online",
+            meetLink
+          };
+
+          await Promise.allSettled([
+            sendAppointmentConfirmationEmail(patientEmail, emailPayload),
+            sendAppointmentConfirmationEmail(doctorEmail, emailPayload)
+          ]);
+        }
+      } catch (meetError) {
+        console.error("Meet event creation failed:", meetError.message);
+      }
+    }
+
+    if (["cancelled", "rejected"].includes(req.body.status) && appointment.calendarEventId) {
+      await deleteMeetEvent(appointment.calendarEventId);
+      appointment.meetLink = "";
+      appointment.calendarEventId = "";
+    }
+
     await appointment.save({ w: "majority" });
 
     const populatedAppointment = await populateAppointment(Appointment.findById(appointment._id));
@@ -336,4 +397,5 @@ router.delete(
   })
 );
 
+export { ensureAppointmentRelations, ensureAppointmentFitsAvailability, ensureNoBookingConflict };
 export default router;
