@@ -225,7 +225,18 @@ const AppointmentsView = () => {
                   <div className="manage-primary">
                     {appointment.patient?.firstName} {appointment.patient?.lastName}
                   </div>
-                  <div className="manage-secondary">{appointment.patient?.email || "No email"}</div>
+                  <div
+                    className="manage-secondary"
+                    title={appointment.patient?.email || "No email"}
+                    style={{
+                      maxWidth: "180px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {appointment.patient?.email ? String(appointment.patient.email).slice(0, 30) : "No email"}
+                  </div>
                 </div>
                 <div className="col-specialty">
                   <div className="manage-primary">{appointment.doctor?.fullName || "Unknown doctor"}</div>
